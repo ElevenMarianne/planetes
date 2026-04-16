@@ -1,0 +1,6 @@
+{% if grade %}
+    <span class="badge badge-gold">
+        {% if grade.icon %}{{ grade.icon }}{% else %}⭐{% endif %}
+        {{ grade.name }}
+    </span>
+{% endif %}

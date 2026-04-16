@@ -1,0 +1,106 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Types d'activité — Back-office{% endblock %}
+
+{% block body %}
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem;">
+    <div>
+        <div class="header-tags">
+            <span class="h-tag red">BACK-OFFICE</span>
+            <span class="h-tag amber">{{ activityTypes|length }} TYPES</span>
+        </div>
+        <p class="page-title">TYPES D'ACTIVITÉ</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ path('back_dashboard') }}" class="btn btn-ghost btn-sm">← TABLEAU DE BORD</a>
+        <a href="{{ path('back_activity_types_new') }}" class="btn btn-primary btn-sm">+ NOUVEAU</a>
+    </div>
+</div>
+
+<div class="card" style="overflow: hidden; padding: 0;">
+    <table class="back-table">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th style="text-align: right;">Points</th>
+                <th>Type de points</th>
+                <th>Multi</th>
+                <th>Statut</th>
+                <th style="text-align: right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for type in activityTypes %}
+                <tr style="{{ not type.active ? 'opacity: 0.5;' : '' }}">
+                    <td>
+                        <div style="font-family: var(--font-display); letter-spacing: 2px; color: var(--text);">
+                            {{ type.name|upper }}
+                        </div>
+                        {% if type.description %}
+                            <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-subtle);
+                                        letter-spacing: 1px; margin-top: 2px; max-width: 280px;
+                                        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                {{ type.description }}
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right; font-family: var(--font-display); font-size: 1.125rem; color: var(--accent-light);">
+                        {{ type.basePoints }}
+                    </td>
+                    <td>
+                        {% if type.pointsTarget.value == 'planet' %}
+                            <span class="badge" style="color: var(--accent-light); border-color: color-mix(in srgb, var(--accent-light) 30%, transparent); background: color-mix(in srgb, var(--accent-light) 8%, transparent);">
+                                🪐 PLANÈTE
+                            </span>
+                        {% elseif type.pointsTarget.value == 'astronaut' %}
+                            <span class="badge badge-muted">👨‍🚀 ASTRO SEUL</span>
+                        {% else %}
+                            <span class="badge badge-success">👨‍🚀 + 🪐 LES DEUX</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if type.allowsMultipleParticipants %}
+                            <span class="badge badge-success">OUI</span>
+                        {% else %}
+                            <span class="badge badge-muted">NON</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if type.active %}
+                            <span class="badge badge-success">ACTIF</span>
+                        {% else %}
+                            <span class="badge badge-muted">INACTIF</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                            <a href="{{ path('back_activity_types_edit', {id: type.id}) }}" class="btn btn-ghost btn-sm">MODIFIER</a>
+                            <form method="post" action="{{ path('back_activity_types_toggle', {id: type.id}) }}" class="inline">
+                                <button type="submit" class="btn btn-sm"
+                                        style="color: var(--amber); border-color: color-mix(in srgb, var(--amber) 25%, transparent);">
+                                    {{ type.active ? 'DÉSACTIVER' : 'ACTIVER' }}
+                                </button>
+                            </form>
+                            <form method="post" action="{{ path('back_activity_types_delete', {id: type.id}) }}" class="inline"
+                                  data-controller="confirm-delete"
+                                  data-confirm-delete-message-value="Supprimer ce type ?">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete_at_' ~ type.id) }}">
+                                <button type="submit" class="btn btn-sm"
+                                        style="color: var(--red); border-color: var(--red-faint);">SUPPRIMER</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 3rem; color: var(--text-subtle);">
+                        Aucun type d'activité.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

@@ -1,0 +1,25 @@
+<a href="{{ path('front_astronauts_show', {id: astronaut.id}) }}"
+   class="card card-hover"
+   style="padding: 1.25rem; text-align: center; display: block;">
+
+    <div class="avatar" style="width: 4rem; height: 4rem; margin: 0 auto 0.875rem; font-size: 1.125rem;
+         {% if astronaut.planet %}
+             border-color: {{ astronaut.planet.color }}55;
+             box-shadow: 0 0 0 3px {{ astronaut.planet.color }}20;
+         {% endif %}">
+        {% if astronaut.photo %}
+            <img src="/uploads/{{ astronaut.photo }}" alt="{{ astronaut.fullName }}">
+        {% else %}
+            {{ astronaut.firstName|first }}{{ astronaut.lastName|first }}
+        {% endif %}
+    </div>
+
+    <div style="font-family: var(--font-display); font-weight: 700; font-size: 0.875rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        {{ astronaut.firstName }}
+    </div>
+    <div class="text-muted" style="font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.5rem;">
+        {{ astronaut.lastName }}
+    </div>
+
+    <twig:GradeBadge :points="astronaut.totalPoints" />
+</a>

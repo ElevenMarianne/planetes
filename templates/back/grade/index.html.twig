@@ -1,0 +1,67 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Grades — Back-office{% endblock %}
+
+{% block body %}
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem;">
+    <div>
+        <div class="header-tags">
+            <span class="h-tag red">BACK-OFFICE</span>
+            <span class="h-tag amber">{{ grades|length }} NIVEAUX</span>
+        </div>
+        <p class="page-title">GRADES</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ path('back_dashboard') }}" class="btn btn-ghost btn-sm">← TABLEAU DE BORD</a>
+        <a href="{{ path('back_grades_new') }}" class="btn btn-primary btn-sm">+ NOUVEAU</a>
+    </div>
+</div>
+
+<div class="card" style="overflow: hidden; padding: 0;">
+    <table class="back-table">
+        <thead>
+            <tr>
+                <th>Icône</th>
+                <th>Grade</th>
+                <th style="text-align: right;">Points min.</th>
+                <th style="text-align: right;">Ordre</th>
+                <th style="text-align: right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for grade in grades %}
+                <tr>
+                    <td style="font-size: 1.25rem; width: 3rem;">{{ grade.icon }}</td>
+                    <td style="font-family: var(--font-display); letter-spacing: 2px; color: var(--text);">
+                        {{ grade.name|upper }}
+                    </td>
+                    <td style="text-align: right; font-family: var(--font-display); font-size: 1.125rem; color: var(--accent-light);">
+                        {{ grade.minPoints }}
+                    </td>
+                    <td style="text-align: right;" class="text-muted">{{ grade.sortOrder }}</td>
+                    <td style="text-align: right;">
+                        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                            <a href="{{ path('back_grades_edit', {id: grade.id}) }}" class="btn btn-ghost btn-sm">MODIFIER</a>
+                            <form method="post" action="{{ path('back_grades_delete', {id: grade.id}) }}" class="inline"
+                                  data-controller="confirm-delete"
+                                  data-confirm-delete-message-value="Supprimer ce grade ?">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete_grade_' ~ grade.id) }}">
+                                <button type="submit" class="btn btn-sm"
+                                        style="color: var(--red); border-color: var(--red-faint);">SUPPRIMER</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-subtle);">
+                        Aucun grade.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

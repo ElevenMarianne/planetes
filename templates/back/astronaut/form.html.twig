@@ -1,0 +1,354 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ astronaut.id ? 'Modifier' : 'Créer' }} un astronaute — Back-office{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+/* Client autocomplete dropdown */
+#client-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.55rem 0.875rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--text-primary);
+    transition: background 0.1s;
+}
+.client-item:last-child { border-bottom: none; }
+.client-item:hover, .client-item.focused { background: rgba(99,102,241,0.08); }
+.client-item-create {
+    color: var(--accent, #6366f1);
+    font-style: italic;
+}
+.client-item-create::before { content: '+ '; font-style: normal; }
+
+/* Checkbox rôles */
+input:checked ~ .role-checkbox-box {
+    background: var(--accent, #6366f1);
+    border-color: var(--accent, #6366f1);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath d='M1 5l3 4L11 1' stroke='%23fff' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 70%;
+}
+/* Toggle actif */
+.toggle-track {
+    background: var(--border);
+}
+.toggle-input:checked ~ .toggle-track {
+    background: #22c55e;
+}
+.toggle-input:checked ~ .toggle-track .toggle-thumb {
+    transform: translateX(1.25rem);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<div style="max-width: 640px; margin: 0 auto;">
+
+    <div style="margin-bottom: 2rem;">
+        <div class="header-tags">
+            <span class="h-tag red">BACK-OFFICE</span>
+            <span class="h-tag">ASTRONAUTES</span>
+        </div>
+        <p class="page-title">{{ astronaut.id ? 'MODIFIER' : 'CRÉER' }} UN ASTRONAUTE</p>
+    </div>
+
+    {{ form_start(form, {attr: {enctype: 'multipart/form-data', style: 'display: flex; flex-direction: column; gap: 1.25rem;'}}) }}
+
+        <div class="card" style="padding: 2rem; display: flex; flex-direction: column; gap: 1.25rem;">
+            {{ form_row(form.firstName, {attr: {class: 'input'}}) }}
+            {{ form_row(form.lastName,  {attr: {class: 'input'}}) }}
+            {{ form_row(form.email,     {attr: {class: 'input'}}) }}
+            {# ── Client : autocomplete + création inline ── #}
+            <div id="client-field">
+                <label style="display:block; font-family:var(--font-mono); font-size:0.6875rem; letter-spacing:2px; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.5rem;">Client</label>
+
+                {# Select caché utilisé pour la soumission Symfony #}
+                <div style="display:none;">{{ form_widget(form.client) }}</div>
+
+                {# Chip du client sélectionné #}
+                <div id="client-chip" style="display:none; align-items:center; gap:0.5rem; padding:0.45rem 0.625rem; background:#141414; border:1px solid var(--border); margin-bottom:0.5rem; width:fit-content;">
+                    <span id="client-chip-name" style="font-family:var(--font-mono); font-size:0.85rem; color:var(--text-primary);"></span>
+                    <button type="button" id="client-chip-remove" title="Retirer" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem; line-height:1; padding:0 2px;">&times;</button>
+                </div>
+
+                {# Zone de recherche #}
+                <div id="client-search-wrap" style="position:relative;">
+                    <div style="position:relative; display:flex; align-items:center;">
+                        <svg style="position:absolute; left:0.75rem; width:14px; height:14px; color:var(--text-muted); pointer-events:none; flex-shrink:0;" viewBox="0 0 16 16" fill="none">
+                            <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        <input type="text" id="client-search-input" class="input"
+                               placeholder="Rechercher ou créer un client…"
+                               autocomplete="off" spellcheck="false"
+                               style="padding-left:2.25rem; width:100%;">
+                    </div>
+                    <div id="client-dropdown" style="display:none; position:absolute; top:calc(100% + 2px); left:0; right:0; background:#141414; border:1px solid var(--border); border-top:2px solid var(--accent, #6366f1); z-index:200; max-height:280px; overflow-y:auto;"></div>
+                </div>
+
+                {{ form_errors(form.client) }}
+            </div>
+            {{ form_row(form.planet, {attr: {class: 'input'}}) }}
+            {{ form_row(form.squad,     {attr: {class: 'input'}}) }}
+            {{ form_row(form.arrivedAt, {attr: {class: 'input'}}) }}
+            <div>
+                <label style="display:block; font-family:var(--font-mono); font-size:0.6875rem; letter-spacing:2px; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.75rem;">Rôles</label>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    {% for child in form.roles %}
+                        <label style="display: flex; align-items: center; gap: 0.625rem; cursor: pointer; user-select: none;">
+                            <span style="position:relative; display:inline-flex; align-items:center; justify-content:center; width:1.125rem; height:1.125rem; flex-shrink:0;">
+                                {{ form_widget(child, {attr: {style: 'position:absolute; opacity:0; width:100%; height:100%; cursor:pointer; margin:0;'}}) }}
+                                <span class="role-checkbox-box" style="
+                                    display:block; width:1.125rem; height:1.125rem;
+                                    border:1.5px solid var(--border); border-radius:3px;
+                                    background:var(--bg-card);
+                                    transition: background 0.15s, border-color 0.15s;
+                                "></span>
+                            </span>
+                            <span style="font-family:var(--font-mono); font-size:0.8125rem; color:var(--text-primary);">
+                                {{ child.vars.label }}
+                            </span>
+                        </label>
+                    {% endfor %}
+                </div>
+                {{ form_errors(form.roles) }}
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0; border-top: 1px solid var(--border);">
+                <div>
+                    <span style="font-family:var(--font-mono); font-size:0.6875rem; letter-spacing:2px; color:var(--text-muted); text-transform:uppercase;">Compte actif</span>
+                    <p style="font-size:0.75rem; color:var(--text-muted); margin:0.2rem 0 0;">L'astronaute peut se connecter à la plateforme</p>
+                </div>
+                <label style="position:relative; display:inline-flex; align-items:center; cursor:pointer; flex-shrink:0; margin-left:1rem;">
+                    {{ form_widget(form.isActive, {attr: {
+                        class: 'toggle-input',
+                        style: 'position:absolute; opacity:0; width:0; height:0;'
+                    }}) }}
+                    <span class="toggle-track" style="
+                        display:block; width:2.75rem; height:1.5rem;
+                        border-radius:9999px;
+                        transition: background 0.2s;
+                        position:relative;
+                    ">
+                        <span class="toggle-thumb" style="
+                            position:absolute; top:3px; left:3px;
+                            width:1.125rem; height:1.125rem;
+                            background:#fff; border-radius:50%;
+                            transition: transform 0.2s;
+                            box-shadow:0 1px 3px rgba(0,0,0,0.3);
+                        "></span>
+                    </span>
+                </label>
+            </div>
+            {{ form_errors(form.isActive) }}
+
+            <div>
+                {{ form_label(form.photoFile) }}
+                <div data-controller="photo-preview" style="display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem;">
+                    <div class="avatar" style="width: 3.5rem; height: 3.5rem; font-size: 1rem; flex-shrink: 0;">
+                        {% if astronaut.photo %}
+                            <img data-photo-preview-target="preview" src="/uploads/{{ astronaut.photo }}" alt="">
+                        {% else %}
+                            <img data-photo-preview-target="preview" src="" alt="" style="display: none;">
+                            {% if astronaut.firstName %}
+                                <span>{{ astronaut.firstName|first }}{{ astronaut.lastName|first }}</span>
+                            {% else %}
+                                <span style="font-size: 1.25rem;">👤</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    <div class="file-picker">
+                        <button type="button" class="btn-file"
+                                data-photo-preview-target="trigger"
+                                data-action="click->photo-preview#open">
+                            Choisir une photo
+                        </button>
+                        <span class="file-name" data-photo-preview-target="filename">
+                            {{ astronaut.photo ? 'Photo actuelle' : 'Aucun fichier' }}
+                        </span>
+                    </div>
+                    {{ form_widget(form.photoFile, {attr: {
+                        'data-photo-preview-target': 'input',
+                        'data-action': 'change->photo-preview#preview',
+                        'accept': 'image/*'
+                    }}) }}
+                </div>
+                {{ form_errors(form.photoFile) }}
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+            <button type="submit" class="btn btn-primary">ENREGISTRER</button>
+            <a href="{{ path('back_astronauts_index') }}" class="btn btn-ghost">ANNULER</a>
+        </div>
+
+    {{ form_end(form) }}
+</div>
+
+<script>
+(function () {
+    const SEARCH_URL      = '{{ path('back_clients_search') }}';
+    const CREATE_URL      = '{{ path('back_clients_quick_create') }}';
+    const CSRF_TOKEN      = '{{ csrf_token('back_clients_quick_create') }}';
+
+    const hiddenSelect    = document.getElementById('{{ form.client.vars.id }}');
+    const searchInput     = document.getElementById('client-search-input');
+    const dropdown        = document.getElementById('client-dropdown');
+    const chip            = document.getElementById('client-chip');
+    const chipName        = document.getElementById('client-chip-name');
+    const chipRemove      = document.getElementById('client-chip-remove');
+    const searchWrap      = document.getElementById('client-search-wrap');
+
+    let results     = [];
+    let focusedIdx  = -1;
+    let debounce    = null;
+    let currentQ    = '';
+
+    /* ── Pré-remplir si édition avec client existant ── */
+    const preselected = hiddenSelect.options[hiddenSelect.selectedIndex];
+    if (preselected && preselected.value) {
+        showChip(preselected.value, preselected.text);
+    }
+
+    function showChip(id, name) {
+        chipName.textContent = name;
+        chip.style.display = 'flex';
+        searchWrap.style.display = 'none';
+        setHidden(id);
+    }
+
+    function clearChip() {
+        chip.style.display = 'none';
+        searchWrap.style.display = 'block';
+        searchInput.value = '';
+        setHidden('');
+        searchInput.focus();
+    }
+
+    function setHidden(value) {
+        Array.from(hiddenSelect.options).forEach(o => { o.selected = o.value === String(value); });
+    }
+
+    /* ── Dropdown ── */
+    function renderDropdown(q) {
+        dropdown.innerHTML = '';
+        focusedIdx = -1;
+
+        results.forEach((c, i) => {
+            const el = document.createElement('div');
+            el.className = 'client-item';
+            el.style.cssText = 'display:flex; align-items:center; gap:0.625rem; padding:0.55rem 0.875rem; cursor:pointer; border-bottom:1px solid var(--border); font-family:var(--font-mono); font-size:0.8125rem; color:var(--text-primary); transition:background 0.1s;';
+            el.dataset.idx = i;
+            el.textContent = c.name;
+            el.addEventListener('mousedown', e => { e.preventDefault(); selectClient(c.id, c.name); });
+            el.addEventListener('mouseover', () => { setFocus(i); });
+            dropdown.appendChild(el);
+        });
+
+        /* Option "Créer" si aucun résultat exact */
+        const exactMatch = results.some(c => c.name.toLowerCase() === q.toLowerCase());
+        if (q.length > 0 && !exactMatch) {
+            const el = document.createElement('div');
+            el.className = 'client-item client-item-create';
+            el.style.cssText = 'display:flex; align-items:center; gap:0.625rem; padding:0.55rem 0.875rem; cursor:pointer; font-family:var(--font-mono); font-size:0.8125rem; color:var(--accent,#6366f1); font-style:italic; transition:background 0.1s;';
+            el.textContent = '+ Créer "' + q + '"';
+            el.dataset.create = q;
+            el.addEventListener('mousedown', e => { e.preventDefault(); createClient(q); });
+            dropdown.appendChild(el);
+        }
+
+        if (dropdown.children.length === 0) {
+            const el = document.createElement('div');
+            el.style.cssText = 'padding:0.75rem 0.875rem; font-family:var(--font-mono); font-size:0.8rem; color:var(--text-muted); text-align:center;';
+            el.textContent = 'Aucun résultat';
+            dropdown.appendChild(el);
+        }
+
+        dropdown.style.display = 'block';
+    }
+
+    function setFocus(idx) {
+        const items = dropdown.querySelectorAll('.client-item');
+        items.forEach(el => el.style.background = '');
+        focusedIdx = idx;
+        if (items[idx]) items[idx].style.background = 'rgba(99,102,241,0.08)';
+    }
+
+    function hideDropdown() { dropdown.style.display = 'none'; focusedIdx = -1; }
+
+    function selectClient(id, name) {
+        showChip(id, name);
+        hideDropdown();
+    }
+
+    async function createClient(name) {
+        const fd = new FormData();
+        fd.append('name', name);
+        fd.append('_token', CSRF_TOKEN);
+        try {
+            const res = await fetch(CREATE_URL, { method: 'POST', body: fd });
+            const data = await res.json();
+            if (data.id) {
+                /* Ajouter l'option au select caché si elle n'existe pas */
+                if (!hiddenSelect.querySelector(`option[value="${data.id}"]`)) {
+                    const opt = new Option(data.name, data.id);
+                    hiddenSelect.appendChild(opt);
+                }
+                selectClient(data.id, data.name);
+            }
+        } catch (e) {
+            console.error('Erreur création client', e);
+        }
+    }
+
+    /* ── Événements ── */
+    chipRemove.addEventListener('click', clearChip);
+
+    searchInput.addEventListener('input', e => {
+        currentQ = e.target.value.trim();
+        clearTimeout(debounce);
+        debounce = setTimeout(async () => {
+            const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(currentQ)}`);
+            results = await res.json();
+            renderDropdown(currentQ);
+        }, 180);
+    });
+
+    searchInput.addEventListener('focus', () => {
+        if (currentQ || searchInput.value.trim()) return;
+        /* Afficher tous les clients au focus sans saisie */
+        fetch(SEARCH_URL).then(r => r.json()).then(data => {
+            results = data;
+            renderDropdown('');
+        });
+    });
+
+    searchInput.addEventListener('blur', () => setTimeout(hideDropdown, 150));
+
+    searchInput.addEventListener('keydown', e => {
+        const items = dropdown.querySelectorAll('.client-item');
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setFocus((focusedIdx + 1) % items.length);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setFocus((focusedIdx - 1 + items.length) % items.length);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (focusedIdx >= 0 && items[focusedIdx]) {
+                items[focusedIdx].dispatchEvent(new Event('mousedown'));
+            }
+        } else if (e.key === 'Escape') {
+            hideDropdown();
+        }
+    });
+})();
+</script>
+{% endblock %}

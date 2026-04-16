@@ -1,0 +1,109 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Activités — Back-office{% endblock %}
+
+{% block body %}
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem;">
+    <div>
+        <div class="header-tags">
+            <span class="h-tag red">BACK-OFFICE</span>
+            {% if season %}<span class="h-tag amber">{{ season.name|upper }}</span>{% endif %}
+        </div>
+        <p class="page-title">ACTIVITÉS & POINTS</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ path('back_dashboard') }}" class="btn btn-ghost btn-sm">← TABLEAU DE BORD</a>
+        <a href="{{ path('back_activities_new') }}" class="btn btn-primary btn-sm">+ ATTRIBUER DES POINTS</a>
+    </div>
+</div>
+
+<div class="card" style="overflow: hidden; padding: 0;">
+    <table class="back-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Activité</th>
+                <th>Astronaute(s)</th>
+                <th>Planète</th>
+                <th style="text-align: right;">Points</th>
+                <th style="text-align: right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for activity in activities %}
+                <tr>
+                    <td class="text-muted" style="white-space: nowrap;">{{ activity.createdAt|date('d/m/Y') }}</td>
+                    <td style="font-family: var(--font-display); letter-spacing: 1px; color: var(--text);">
+                        {{ activity.type.name|upper }}
+                    </td>
+                    <td style="color: var(--text-muted); font-size: 0.875rem;">
+                        {{ activity.astronauts|map(a => a.fullName)|join(', ') }}
+                    </td>
+                    <td>
+                        {% if activity.planet %}
+                            <span style="font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 1px;
+                                         color: {{ activity.planet.color }};">{{ activity.planet.name|upper }}</span>
+                        {% else %}
+                            <span class="text-subtle">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right; font-family: var(--font-display); font-size: 1.125rem; color: var(--accent-light);">
+                        {{ activity.points }}
+                    </td>
+                    <td style="text-align: right;">
+                        <form method="post" action="{{ path('back_activities_delete', {id: activity.id}) }}"
+                              data-controller="confirm-delete"
+                              data-confirm-delete-message-value="Supprimer et retirer les points ?">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete_activity_' ~ activity.id) }}">
+                            <button type="submit" class="btn btn-sm"
+                                    style="color: var(--red); border-color: var(--red-faint);">SUPPRIMER</button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 3rem; color: var(--text-subtle);">
+                        Aucune activité pour cette saison.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if totalPages > 1 %}
+<div style="display: flex; align-items: center; justify-content: space-between;
+            margin-top: 1rem; font-family: var(--font-mono); font-size: 0.75rem;">
+    <span style="color: var(--text-subtle);">
+        {{ totalCount }} activité{{ totalCount > 1 ? 's' : '' }} · page {{ currentPage }}/{{ totalPages }}
+    </span>
+    <div style="display: flex; gap: 0.25rem; align-items: center;">
+        {% if currentPage > 1 %}
+            <a href="{{ path('back_activities_index', {page: currentPage - 1}) }}"
+               class="btn btn-ghost btn-sm">←</a>
+        {% endif %}
+
+        {% for p in 1..totalPages %}
+            {% if p == 1 or p == totalPages or (p >= currentPage - 2 and p <= currentPage + 2) %}
+                <a href="{{ path('back_activities_index', {page: p}) }}"
+                   class="btn btn-sm"
+                   style="{{ p == currentPage
+                       ? 'background: var(--red-faint); border-color: var(--red); color: var(--red);'
+                       : 'background: transparent; border-color: var(--border); color: var(--text-muted);' }}">
+                    {{ p }}
+                </a>
+            {% elseif p == currentPage - 3 or p == currentPage + 3 %}
+                <span style="color: var(--text-subtle); padding: 0 0.25rem;">…</span>
+            {% endif %}
+        {% endfor %}
+
+        {% if currentPage < totalPages %}
+            <a href="{{ path('back_activities_index', {page: currentPage + 1}) }}"
+               class="btn btn-ghost btn-sm">→</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

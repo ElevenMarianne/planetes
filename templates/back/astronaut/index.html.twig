@@ -1,0 +1,88 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Astronautes — Back-office{% endblock %}
+
+{% block body %}
+<div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <div class="header-tags">
+            <span class="h-tag red">BACK-OFFICE</span>
+            <span class="h-tag amber">{{ astronauts|length }} MEMBRES</span>
+        </div>
+        <p class="page-title">ASTRONAUTES</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ path('back_dashboard') }}" class="btn btn-ghost btn-sm">← TABLEAU DE BORD</a>
+        <a href="{{ path('back_astronauts_new') }}" class="btn btn-primary btn-sm">+ NOUVEAU</a>
+    </div>
+</div>
+
+<div class="card" style="overflow: hidden; padding: 0;">
+    <table class="back-table">
+        <thead>
+            <tr>
+                <th>Astronaute</th>
+                <th>Email</th>
+                <th>Planète</th>
+                <th>Squad</th>
+                <th style="text-align: right;">Points</th>
+                <th style="text-align: right;">Statut</th>
+                <th style="text-align: right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in astronauts %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div class="avatar" style="width: 2rem; height: 2rem; font-size: 0.7rem; flex-shrink: 0;
+                                 {% if a.planet %}border-color: {{ a.planet.color }}44;{% endif %}">
+                                {% if a.photo %}
+                                    <img src="/uploads/{{ a.photo }}" alt="">
+                                {% else %}
+                                    {{ a.firstName|first }}{{ a.lastName|first }}
+                                {% endif %}
+                            </div>
+                            <span style="font-weight: 600; color: var(--text);">{{ a.fullName }}</span>
+                        </div>
+                    </td>
+                    <td class="text-muted">{{ a.email }}</td>
+                    <td>
+                        {% if a.planet %}
+                            <span style="padding: 0.2rem 0.625rem; border-radius: 100px; font-size: 0.75rem; font-weight: 700;
+                                         background-color: {{ a.planet.color }}1a; color: {{ a.planet.color }}; border: 1px solid {{ a.planet.color }}40;">
+                                {{ a.planet.name }}
+                            </span>
+                        {% else %}
+                            <span class="text-subtle">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set squadPicto = a.squad.value == 'paris' ? '🗼' : (a.squad.value == 'nantes' ? '🏰' : '🚜') %}
+                        <span title="{{ a.squad.label() }}" style="font-size: 1rem;">{{ squadPicto }}</span>
+                    </td>
+                    <td style="text-align: right; font-family: var(--font-display); font-weight: 700; color: var(--accent-light);">
+                        {{ a.totalPoints }}
+                    </td>
+                    <td style="text-align: right;">
+                        {% if a.isActive %}
+                            <span class="badge badge-success">Actif</span>
+                        {% else %}
+                            <span class="badge badge-muted">Inactif</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        <a href="{{ path('back_astronauts_edit', {id: a.id}) }}" class="btn btn-ghost btn-sm">✏️</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-subtle);">
+                        Aucun astronaute.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{# LiveComponent — rechargé via polling #}
+<div {{ attributes.defaults({
+    'data-live-id': 'leaderboard',
+    'data-poll': '30000'
+}) }}>
+    {% set leaderboard = this.leaderboardData %}
+    {% if leaderboard %}
+        <div class="space-y-3">
+            {% for index, psp in leaderboard %}
+                <div class="bg-gray-900 rounded-xl px-5 py-4 flex items-center gap-5 border border-gray-800">
+                    <div class="text-2xl font-black text-gray-600 w-8 text-center">
+                        {% if index == 0 %}🥇{% elseif index == 1 %}🥈{% elseif index == 2 %}🥉{% else %}{{ index + 1 }}{% endif %}
+                    </div>
+                    <div class="w-3 h-10 rounded-full" style="background-color: {{ psp.planet.color }}"></div>
+                    <div class="flex-1">
+                        <a href="{{ path('front_planets_show', {slug: psp.planet.slug}) }}" class="text-white font-semibold hover:text-indigo-300 transition">
+                            {{ psp.planet.name }}
+                        </a>
+                    </div>
+                    <div class="text-xl font-bold text-indigo-400">{{ psp.totalPoints }} pts</div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-gray-600">Aucun score disponible.</p>
+    {% endif %}
+</div>

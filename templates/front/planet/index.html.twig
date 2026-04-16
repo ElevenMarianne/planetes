@@ -1,0 +1,447 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Eleven Galaxy{% endblock %}
+
+{% block body %}
+
+<style>
+/* ── Effets mecha page-level ─────────────────────────────────────── */
+
+/* Corner brackets sur chaque carte */
+.unit-card .corner {
+    position: absolute;
+    width: 12px; height: 12px;
+    border-color: var(--card-color, var(--border));
+    border-style: solid;
+    opacity: 0.4;
+    transition: opacity 0.2s, width 0.2s, height 0.2s;
+    pointer-events: none;
+    z-index: 2;
+}
+.unit-card:hover .corner { opacity: 1; width: 16px; height: 16px; }
+.unit-card .corner.tl { top: 4px; left: 4px;     border-width: 1px 0 0 1px; }
+.unit-card .corner.tr { top: 4px; right: 4px;    border-width: 1px 1px 0 0; }
+.unit-card .corner.bl { bottom: 4px; left: 4px;  border-width: 0 0 1px 1px; }
+.unit-card .corner.br { bottom: 4px; right: 4px; border-width: 0 1px 1px 0; }
+
+/* Scan line sur hover */
+.unit-card .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--card-color, var(--text-subtle)), transparent);
+    opacity: 0;
+    top: 0;
+    pointer-events: none;
+    z-index: 3;
+    transition: none;
+}
+.unit-card:hover .scan-line {
+    animation: card-scan 1.2s linear infinite;
+    opacity: 1;
+}
+@keyframes card-scan {
+    0%   { top: 0%; }
+    100% { top: 100%; }
+}
+
+/* Lock-on reticule sur l'emblème */
+.unit-emblem .reticule {
+    position: absolute;
+    inset: -6px;
+    border: 1px solid transparent;
+    border-radius: 0;
+    transition: border-color 0.2s, transform 0.3s;
+    pointer-events: none;
+}
+.unit-emblem .reticule::before,
+.unit-emblem .reticule::after {
+    content: '';
+    position: absolute;
+    background: var(--card-color, var(--text-subtle));
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.unit-emblem .reticule::before { width: 6px; height: 1px; top: 50%; left: -8px; transform: translateY(-50%); }
+.unit-emblem .reticule::after  { width: 1px; height: 6px; left: 50%; top: -8px; transform: translateX(-50%); }
+.unit-card:hover .unit-emblem .reticule {
+    border-color: var(--card-color, var(--text-subtle));
+    transform: rotate(45deg) scale(0.9);
+}
+.unit-card:hover .unit-emblem .reticule::before,
+.unit-card:hover .unit-emblem .reticule::after { opacity: 0.6; }
+
+/* Rank-1 : pulse sur la bordure */
+.unit-card.rank-1 {
+    animation: card-init 0.4s ease-out both, rank1-pulse 3s ease-in-out 1s infinite;
+}
+@keyframes rank1-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--card-color) 0%, transparent); }
+    50%       { box-shadow: 0 0 18px 2px color-mix(in srgb, var(--card-color) 20%, transparent); }
+}
+
+/* Glitch sur le numéro rang-1 */
+.unit-card.rank-1 .rank-num {
+    animation: glitch-num 6s ease-in-out infinite;
+}
+@keyframes glitch-num {
+    0%, 90%, 100% { transform: none; text-shadow: none; }
+    92% { transform: translateX(-2px); text-shadow: 2px 0 var(--red); }
+    94% { transform: translateX(2px);  text-shadow: -2px 0 #00e5ff; }
+    96% { transform: translateX(-1px); text-shadow: 1px 0 var(--red); }
+    98% { transform: none; text-shadow: none; }
+}
+
+/* Barre data stream sous le footer */
+.unit-card .data-stream {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--card-color, var(--border)) 50%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    opacity: 0;
+    transition: opacity 0.2s;
+    animation: stream-move 2s linear infinite;
+}
+.unit-card:hover .data-stream { opacity: 0.5; }
+@keyframes stream-move {
+    0%   { background-position: -100% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Header HUD */
+.hud-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.hud-blink {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--red);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--red);
+    animation: hud-blink 1.4s ease-in-out infinite;
+    flex-shrink: 0;
+}
+@keyframes hud-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.1; }
+}
+.hud-ticker {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    overflow: hidden;
+    max-width: 380px;
+}
+.hud-ticker-inner {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--text-subtle);
+    letter-spacing: 2px;
+    white-space: nowrap;
+    animation: ticker-scroll 18s linear infinite;
+}
+@keyframes ticker-scroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* Diagonal accent sur rank-1 — couleur planète comme les autres rangs */
+.unit-card.rank-1 .card-accent {
+    position: relative;
+    overflow: hidden;
+    background: var(--card-color);
+    opacity: 0.8;
+}
+.unit-card.rank-1 .card-accent::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--card-color) 40%, transparent) 50%, transparent 100%);
+    background-size: 200%;
+    animation: accent-sweep 3s ease-in-out infinite;
+}
+@keyframes accent-sweep {
+    0%   { background-position: -100%; }
+    100% { background-position: 200%; }
+}
+
+/* Card coord stamp */
+.coord-stamp {
+    font-family: var(--font-mono);
+    font-size: 0.5rem;
+    color: var(--text-subtle);
+    letter-spacing: 1px;
+    opacity: 0.5;
+    position: absolute;
+    bottom: 5px;
+    right: 8px;
+}
+
+/* Stats highlight */
+.unit-card:hover .stat-cell.highlight .s-val {
+    text-shadow: 0 0 12px var(--card-color);
+}
+</style>
+
+{# ── HUD Header ───────────────────────────────────────────────────── #}
+<div class="hud-header" style="margin-bottom: 1rem;">
+    <div>
+        <div class="header-tags">
+            <span class="h-tag red" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                <span class="hud-blink"></span>
+                TACTICAL DISPLAY
+            </span>
+            <span class="h-tag amber">{{ planets|length }} UNITÉS</span>
+            {% if season and not season.isActive %}
+                <span class="h-tag" style="color: var(--text-muted); border-color: var(--border);">ARCHIVES</span>
+            {% endif %}
+        </div>
+        <p class="page-title">CLASSEMENT</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;">
+        {% if tabSeasons|length > 1 %}
+        <div style="display: flex; gap: 1px; background: var(--border); border: 1px solid var(--border);">
+            {% for s in tabSeasons %}
+                <a href="{{ path('front_planets', {season: s.id}) }}"
+                   style="display: flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.875rem;
+                          font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 1px;
+                          text-decoration: none; transition: background 0.15s; white-space: nowrap;
+                          {% if season and season.id == s.id %}
+                              background: var(--red-faint); color: var(--red);
+                          {% else %}
+                              background: var(--panel); color: var(--text-muted);
+                          {% endif %}">
+                    {% if s.isActive %}
+                        <span style="width: 5px; height: 5px; border-radius: 50%; background: var(--green-bright);
+                                     box-shadow: 0 0 4px var(--green-bright); display: inline-block; flex-shrink: 0;"></span>
+                    {% endif %}
+                    {{ s.name|replace({'Saison ': ''}) }}
+                </a>
+            {% endfor %}
+            {% if hasArchives %}
+                <a href="{{ path('front_planets_archives') }}"
+                   style="display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.875rem;
+                          font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 1px;
+                          text-decoration: none; background: var(--panel); color: var(--text-subtle);
+                          border-left: 1px solid var(--border); white-space: nowrap;">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    ARCHIVES
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% if season %}
+        <div class="header-meta" style="margin: 0;">
+            <div>PÉRIODE <span class="val">{{ season.startDate|date('d/m/Y') }} — {{ season.endDate|date('d/m/Y') }}</span></div>
+            <div>TOTAL POINTS <span class="val">{{ totalPoints }}</span></div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Barre de statut HUD ──────────────────────────────────────────── #}
+{% if season %}
+<div class="status-bar" style="margin: 0 0 6px; position: relative; overflow: hidden;">
+    <div class="status-cell">
+        {% if season.isActive %}
+            <span class="dot green"></span>
+            COMPÉTITION <span class="val">ACTIVE</span>
+        {% else %}
+            <span class="dot amber"></span>
+            ARCHIVES <span class="val">TERMINÉE</span>
+        {% endif %}
+    </div>
+    <div class="status-cell">
+        SAISON <span class="val">{{ season.name|upper }}</span>
+    </div>
+    <div class="status-cell">
+        UNITÉS <span class="val">{{ planets|length }}</span>
+    </div>
+    <div class="status-cell">
+        POINTS TOTAUX <span class="val">{{ totalPoints }}</span>
+    </div>
+    {# Ticker défilant #}
+    <div class="hud-ticker" style="margin-left: auto; padding: 0 1rem; border-left: 1px solid var(--border);">
+        <span class="hud-ticker-inner">
+            {%- for planet in planets -%}
+                {{- planet.name|upper -}} ·· {{ seasonPointsMap[planet.id] ?? 0 }}PT &nbsp;&nbsp;&nbsp;&nbsp;
+            {%- endfor -%}
+            {%- for planet in planets -%}
+                {{- planet.name|upper -}} ·· {{ seasonPointsMap[planet.id] ?? 0 }}PT &nbsp;&nbsp;&nbsp;&nbsp;
+            {%- endfor -%}
+        </span>
+    </div>
+</div>
+{% endif %}
+
+{# ── Grille des unités ────────────────────────────────────────────── #}
+<div class="hangar-grid" style="padding: 20px 0 8px; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));">
+    {% for index, planet in planets %}
+        {% set pts = seasonPointsMap[planet.id] ?? 0 %}
+        {% set pilotCount = planet.astronauts|filter(a => a.isActive)|length %}
+        {% set ptsPerPilot = pilotCount > 0 ? (pts / pilotCount)|round(1) : 0 %}
+        {% set gaugeTotal = 12 %}
+        {% set gaugeFilled = maxPoints > 0 ? ((pts / maxPoints) * gaugeTotal)|round : 0 %}
+        {% set rankClass = index == 0 ? 'rank-1' : (index == 1 ? 'rank-2' : (index == 2 ? 'rank-3' : (index == 3 ? 'rank-4' : 'rank-n'))) %}
+        {% set threatDiamonds = index == 0 ? 5 : (index == 1 ? 4 : (index == 2 ? 3 : (index == 3 ? 2 : 1))) %}
+        {% set threatLabel = index == 0 ? 'CRITIQUE' : (index == 1 ? 'ÉLEVÉ' : (index == 2 ? 'MODÉRÉ' : (index == 3 ? 'FAIBLE' : 'MINIMAL'))) %}
+        {% set threatClass = index == 0 ? 'critical' : (index == 1 ? 'high' : (index == 2 ? 'moderate' : 'low')) %}
+
+        <a href="{{ planet.slug ? path('front_planets_show', {slug: planet.slug}) : '#' }}"
+           class="unit-card {{ rankClass }}"
+           style="--card-color: {{ planet.color }};">
+
+            {# Effets mecha #}
+            <div class="corner tl"></div>
+            <div class="corner tr"></div>
+            <div class="corner bl"></div>
+            <div class="corner br"></div>
+            <div class="scan-line"></div>
+            <div class="data-stream"></div>
+
+            <div class="card-accent"></div>
+
+            <div class="card-header">
+                <span class="unit-serial">UNIT-{{ '%03d'|format(index + 1) }} // {{ planet.name|upper|slice(0,3) }}-{{ planet.id }}</span>
+                {# Indicateurs HUD remplaçant "ONLINE" #}
+                <div style="display: flex; align-items: center; gap: 0.625rem;">
+                    {% if index == 0 %}
+                        <span style="font-family: var(--font-mono); font-size: 0.5625rem; letter-spacing: 2px;
+                                     color: var(--gold); border: 1px solid rgba(255,214,0,0.3);
+                                     padding: 1px 5px; animation: hud-blink 2s ease-in-out infinite;">◆ LEADER</span>
+                    {% endif %}
+                    <span style="font-family: var(--font-mono); font-size: 0.5625rem; color: var(--text-subtle);
+                                 letter-spacing: 1px;">SIG:{{ '%03d'|format(gaugeFilled * 8 + 12) }}</span>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="rank-block">
+                    <div class="rank-num">{{ index + 1 }}</div>
+                    <div class="rank-label">RANG</div>
+                </div>
+
+                <div class="unit-emblem">
+                    {% if planet.photo %}
+                        <img src="/uploads/{{ planet.photo }}" alt="{{ planet.name }}">
+                    {% else %}
+                        <span style="font-size: 2rem; opacity: 0.4;">🪐</span>
+                    {% endif %}
+                    <div class="reticule"></div>
+                </div>
+
+                <div class="unit-info">
+                    <div class="unit-designation">{{ planet.name|upper }}</div>
+                    {% if planet.mantra %}
+                        <div class="unit-class">{{ planet.mantra|upper|slice(0, 40) }}</div>
+                    {% endif %}
+
+                    <div class="stats-grid">
+                        <div class="stat-cell highlight">
+                            <div class="s-val">{{ pts }}</div>
+                            <div class="s-label">POINTS</div>
+                        </div>
+                        <div class="stat-cell">
+                            <div class="s-val">{{ pilotCount }}</div>
+                            <div class="s-label">ASTRONAUTES</div>
+                        </div>
+                        <div class="stat-cell">
+                            <div class="s-val">{{ ptsPerPilot }}</div>
+                            <div class="s-label">PTS/AST.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <div class="power-section">
+                    <span class="power-label">PUISSANCE</span>
+                    <div class="power-gauge">
+                        {% for i in 1..gaugeTotal %}
+                            <div class="gauge-segment {{ i <= gaugeFilled ? (i == gaugeFilled ? 'filled bright' : 'filled') : '' }}"></div>
+                        {% endfor %}
+                    </div>
+                    <span class="power-value">{{ pts }}PT</span>
+                </div>
+
+                <div class="threat-row">
+                    <span class="threat-label">NIVEAU</span>
+                    <div class="threat-diamonds">
+                        {% for i in 1..5 %}
+                            <div class="diamond {{ i <= threatDiamonds ? 'active' : '' }}"></div>
+                        {% endfor %}
+                    </div>
+                    <span class="threat-text {{ threatClass }}">{{ threatLabel }}</span>
+                </div>
+            </div>
+
+            <span class="coord-stamp">{{ planet.id }}N·{{ '%04d'|format(pts) }}E</span>
+
+        </a>
+    {% endfor %}
+</div>
+
+{# ── Astronautes en attente d'affectation ─────────────────────────── #}
+{% if unassignedAstronauts is not empty %}
+<div style="margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 2rem;">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div class="header-tags" style="justify-content: center;">
+            <span class="h-tag" style="color: var(--text-subtle); border-color: var(--border);">EN DÉRIVE</span>
+            <span class="h-tag amber">{{ unassignedAstronauts|length }}</span>
+        </div>
+        <p class="section-title" style="margin: 0.5rem 0 0; font-size: 1.1rem; letter-spacing: 4px;">ASTRONAUTES EN ATTENTE D'AFFECTATION</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 1px;
+                border: 1px solid var(--border); background: var(--border);
+                max-width: 900px; margin: 0 auto; padding-top: 1.5rem;">
+        {% for astronaut in unassignedAstronauts %}
+            <a href="{{ path('front_astronauts_show', {id: astronaut.id}) }}"
+               class="unit-card"
+               style="padding: 1.25rem 1rem; text-align: center; display: block; text-decoration: none;
+                      position: relative; overflow: visible;
+                      --card-color: var(--text-subtle);
+                      animation: card-init 0.4s ease-out both;">
+
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--text-subtle); opacity: 0.3;"></div>
+
+                <div class="avatar" style="width: 3.75rem; height: 3.75rem; margin: 0 auto 0.875rem;
+                     border-color: var(--border);
+                     box-shadow: 0 0 0 2px var(--border), 0 4px 12px rgba(0,0,0,0.3);">
+                    {% if astronaut.photo %}
+                        <img src="/uploads/{{ astronaut.photo }}" alt="{{ astronaut.fullName }}">
+                    {% else %}
+                        <span style="font-size: 1rem; font-family: var(--font-display);">{{ astronaut.firstName|first }}{{ astronaut.lastName|first }}</span>
+                    {% endif %}
+                </div>
+
+                <div style="font-family: var(--font-display); font-size: 0.9375rem; letter-spacing: 1px; color: var(--text);
+                            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {{ astronaut.firstName }}
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted); letter-spacing: 1px;
+                            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.625rem;">
+                    {{ astronaut.lastName|upper }}
+                </div>
+
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.3rem;">
+                    <twig:GradeBadge :points="astronaut.totalPoints" />
+                </div>
+
+            </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

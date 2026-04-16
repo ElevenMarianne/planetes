@@ -1,0 +1,110 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Archives — Eleven Galaxy{% endblock %}
+
+{% block body %}
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <div class="header-tags">
+            <span class="h-tag red">HISTORIQUE</span>
+            <span class="h-tag amber">{{ seasonRankings|length }} SAISONS</span>
+        </div>
+        <p class="page-title">ARCHIVES</p>
+    </div>
+    <a href="{{ path('front_planets') }}" class="btn btn-ghost btn-sm">
+        ← RETOUR AU CLASSEMENT
+    </a>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    {% for entry in seasonRankings %}
+        {% set season = entry.season %}
+        {% set ranking = entry.ranking %}
+        <div style="border: 1px solid var(--border); background: var(--panel);">
+
+            {# En-tête saison #}
+            <div style="display: flex; align-items: center; justify-content: space-between;
+                        padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border);
+                        background: {% if season.isActive %}var(--red-faint){% else %}var(--panel-raised){% endif %};">
+                <div style="display: flex; align-items: center; gap: 0.875rem;">
+                    {% if season.isActive %}
+                        <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--green-bright);
+                                     box-shadow: 0 0 5px var(--green-bright); display: inline-block; flex-shrink: 0;"></span>
+                    {% endif %}
+                    <span style="font-family: var(--font-display); font-size: 1.25rem; letter-spacing: 4px; color: {% if season.isActive %}var(--red){% else %}var(--text){% endif %};">
+                        {{ season.name|upper }}
+                    </span>
+                    {% if season.isActive %}
+                        <span class="badge badge-accent">EN COURS</span>
+                    {% else %}
+                        <span class="badge badge-muted">TERMINÉE</span>
+                    {% endif %}
+                </div>
+                <span style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted); letter-spacing: 1px;">
+                    {{ season.startDate|date('d/m/Y') }} — {{ season.endDate|date('d/m/Y') }}
+                </span>
+            </div>
+
+            {# Classement de la saison #}
+            <div style="display: flex; flex-direction: column; gap: 1px; background: var(--border);">
+                {% for i, entry in ranking %}
+                    {% set planet = entry.planet %}
+                    {% set pts = entry.points %}
+                    {% set maxPts = ranking[0].points %}
+                    {% set barWidth = maxPts > 0 ? ((pts / maxPts) * 100)|round : 0 %}
+
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1.25rem;
+                                background: var(--panel); position: relative; overflow: hidden;">
+
+                        {# Barre de fond proportionnelle #}
+                        <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ barWidth }}%;
+                                    background: {{ planet.color }}08; pointer-events: none;"></div>
+
+                        {# Rang #}
+                        <div style="font-family: var(--font-display); font-size: 1.5rem; line-height: 1; width: 2rem;
+                                    text-align: center; flex-shrink: 0; position: relative;
+                                    color: {% if i == 0 %}var(--gold){% elseif i == 1 %}var(--silver){% elseif i == 2 %}var(--bronze){% else %}var(--text-muted){% endif %};">
+                            {{ i + 1 }}
+                        </div>
+
+                        {# Mascotte #}
+                        {% if planet.photo %}
+                            <img src="/uploads/{{ planet.photo }}" alt="{{ planet.name }}"
+                                 style="width: 2.25rem; height: 2.25rem; object-fit: contain; flex-shrink: 0; position: relative;
+                                        filter: drop-shadow(0 2px 6px {{ planet.color }}50);">
+                        {% else %}
+                            <div style="width: 2.25rem; height: 2.25rem; background: {{ planet.color }}18;
+                                        border: 1px solid {{ planet.color }}44; flex-shrink: 0; display: flex;
+                                        align-items: center; justify-content: center; font-size: 1rem; position: relative;">🪐</div>
+                        {% endif %}
+
+                        {# Nom #}
+                        <div style="flex: 1; min-width: 0; position: relative;">
+                            <span style="font-family: var(--font-display); font-size: 1rem; letter-spacing: 2px; color: {{ planet.color }};">
+                                {{ planet.name|upper }}
+                            </span>
+                        </div>
+
+                        {# Barre points #}
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; position: relative;">
+                            <div style="width: 120px; height: 4px; background: var(--bg); border: 1px solid var(--border);">
+                                <div style="height: 100%; width: {{ barWidth }}%; background: {{ planet.color }}; opacity: 0.7;"></div>
+                            </div>
+                            <span style="font-family: var(--font-display); font-size: 1.125rem; letter-spacing: 1px;
+                                         width: 4rem; text-align: right;
+                                         color: {% if i == 0 %}var(--gold){% elseif i == 1 %}var(--silver){% elseif i == 2 %}var(--bronze){% else %}var(--text){% endif %};">
+                                {{ pts }}
+                            </span>
+                            <span style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-subtle); letter-spacing: 2px;">PT</span>
+                        </div>
+
+                    </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

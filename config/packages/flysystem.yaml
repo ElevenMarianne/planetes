@@ -1,0 +1,11 @@
+flysystem:
+    storages:
+        # Stockage des uploads (photos astronautes, planètes, trophées)
+        uploads.storage:
+            adapter: 'local'
+            options:
+                directory: '%kernel.project_dir%/public/uploads'
+
+        # Pour une migration vers le cloud en prod, remplacer par :
+        # adapter: 'gcs'  avec league/flysystem-google-cloud-storage
+        # adapter: 'asyncaws'  avec league/flysystem-aws-s3-v3

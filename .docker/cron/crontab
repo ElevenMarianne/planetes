@@ -1,0 +1,1 @@
+0 10 * * * root php /var/www/html/bin/console app:anniversary-check >> /var/log/anniversary-check.log 2>&1

@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Présences — {{ event.name }}{% endblock %}
+
+{% block body %}
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem;">
+    <div>
+        <div class="header-tags">
+            <span class="h-tag red">BACK-OFFICE</span>
+            <span class="h-tag">ÉVÉNEMENT</span>
+            <span class="h-tag amber">{{ event.date|date('d/m/Y') }}</span>
+        </div>
+        <p class="page-title">{{ event.name|upper }}</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <img src="/orbit/planet-red.svg" alt="" width="48" height="48" style="opacity: 0.7;">
+        <a href="{{ path('back_events_index') }}" class="btn btn-ghost btn-sm">← ÉVÉNEMENTS</a>
+    </div>
+</div>
+
+<div class="status-bar" style="margin-bottom: 1.5rem;">
+    <div class="status-cell">
+        ÉVÉNEMENT <span class="val">{{ event.name|upper }}</span>
+    </div>
+    <div class="status-cell">
+        DATE <span class="val">{{ event.date|date('d/m/Y à H:i') }}</span>
+    </div>
+    <div class="status-cell">
+        PARTICIPANTS <span class="val">{{ event.participantCount }}</span>
+    </div>
+</div>
+
+<twig:EventAttendanceManager :event="event" />
+
+{% endblock %}

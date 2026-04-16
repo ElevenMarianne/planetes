@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Événements — Back-office{% endblock %}
+
+{% block body %}
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem;">
+    <div>
+        <div class="header-tags">
+            <span class="h-tag red">BACK-OFFICE</span>
+            <span class="h-tag amber">{{ events|length }} ÉVÉNEMENTS</span>
+        </div>
+        <p class="page-title">ÉVÉNEMENTS</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ path('back_dashboard') }}" class="btn btn-ghost btn-sm">← TABLEAU DE BORD</a>
+        <a href="{{ path('back_events_new') }}" class="btn btn-primary btn-sm">+ NOUVEL ÉVÉNEMENT</a>
+    </div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 1px; border: 1px solid var(--border); background: var(--border);">
+    {% for event in events %}
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; background: var(--panel);">
+            <div>
+                <div style="font-family: var(--font-display); font-size: 1rem; letter-spacing: 2px; color: var(--text); margin-bottom: 2px;">
+                    {{ event.name|upper }}
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-subtle); letter-spacing: 1px;">
+                    {{ event.date|date('d/m/Y à H:i') }}
+                    <span style="color: var(--border);">·</span>
+                    {{ event.participantCount }} PARTICIPANT(S)
+                </div>
+            </div>
+            <a href="{{ path('back_events_attendance', {id: event.id}) }}" class="btn btn-ghost btn-sm">
+                GÉRER LES PRÉSENCES →
+            </a>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 4rem; background: var(--panel); color: var(--text-subtle);
+                    font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 3px;">
+            AUCUN ÉVÉNEMENT
+        </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

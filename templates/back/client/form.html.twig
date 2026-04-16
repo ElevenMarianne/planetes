@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ isEdit ? 'Modifier' : 'Nouveau' }} client — Back-office{% endblock %}
+
+{% block body %}
+<div style="max-width: 480px; margin: 0 auto;">
+
+    <div style="margin-bottom: 2rem;">
+        <div class="header-tags">
+            <span class="h-tag red">BACK-OFFICE</span>
+            <span class="h-tag">CLIENTS</span>
+        </div>
+        <p class="page-title">{{ isEdit ? 'MODIFIER ' ~ client.name|upper : 'NOUVEAU CLIENT' }}</p>
+    </div>
+
+    <form method="post" style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <div class="card" style="padding: 2rem; display: flex; flex-direction: column; gap: 1.25rem;">
+            <div>
+                <label style="display:block; font-family:var(--font-mono); font-size:0.6875rem; letter-spacing:2px; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.375rem;">Nom du client</label>
+                <input type="text" name="name" value="{{ client.name }}" required class="input" placeholder="ex : Société Générale">
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+            <button type="submit" class="btn btn-primary">{{ isEdit ? 'METTRE À JOUR' : 'CRÉER LE CLIENT' }}</button>
+            <a href="{{ path('back_clients_index') }}" class="btn btn-ghost">ANNULER</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-900/40 text-yellow-300 border border-yellow-800"
+      title="{{ trophy.description }}{% if awardedAt %} — {{ awardedAt }}{% endif %}">
+    {% if trophy.image %}
+        <img src="/uploads/{{ trophy.image }}" alt="" class="w-4 h-4 rounded-full object-cover">
+    {% else %}
+        🏆
+    {% endif %}
+    {{ trophy.name }}
+</span>

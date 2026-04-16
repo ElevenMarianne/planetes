@@ -1,0 +1,101 @@
+{# LiveComponent — sélecteur dynamique pour la création d'activité #}
+<div {{ attributes }}>
+    {% set selectedType = this.selectedType %}
+    {% set allowsMultiple = this.allowsMultiple() %}
+
+    {# Type d'activité #}
+    <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-400 mb-1">Type d'activité</label>
+        <select
+            data-model="selectedTypeId"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        >
+            <option value="">— Sélectionner un type —</option>
+            {% for type in this.activityTypes %}
+                <option value="{{ type.id }}" {% if selectedTypeId == type.id %}selected{% endif %}>
+                    {{ type.name }} ({{ type.basePoints }} pts)
+                    {% if type.allowsMultipleParticipants %} · duo/groupe{% endif %}
+                </option>
+            {% endfor %}
+        </select>
+        {% if selectedType and selectedType.description %}
+            <p class="text-xs text-gray-500 mt-1 italic">{{ selectedType.description }}</p>
+        {% endif %}
+    </div>
+
+    {# Sélecteur d'astronautes #}
+    {% if selectedType %}
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">
+                {% if allowsMultiple %}Astronautes{% else %}Astronaute{% endif %}
+            </label>
+
+            {% if allowsMultiple %}
+                {# Multi-sélection sous forme de grille de cases à cocher #}
+                <div class="max-h-48 overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg p-3 grid grid-cols-2 gap-2">
+                    {% for astronaut in this.astronauts %}
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white transition text-sm text-gray-300">
+                            <input
+                                type="checkbox"
+                                data-model="selectedAstronautIds[]"
+                                value="{{ astronaut.id }}"
+                                {% if astronaut.id in selectedAstronautIds %}checked{% endif %}
+                                class="rounded border-gray-600 bg-gray-700 text-indigo-500 focus:ring-indigo-500"
+                            >
+                            <span>{{ astronaut.firstName }} {{ astronaut.lastName }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            {% else %}
+                {# Sélection unique #}
+                <select
+                    data-model="selectedAstronautIds.0"
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500"
+                >
+                    <option value="">— Sélectionner un astronaute —</option>
+                    {% for astronaut in this.astronauts %}
+                        <option value="{{ astronaut.id }}" {% if selectedAstronautIds[0] is defined and selectedAstronautIds[0] == astronaut.id %}selected{% endif %}>
+                            {{ astronaut.fullName }}
+                            {% if astronaut.planet %} — {{ astronaut.planet.name }}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+        </div>
+
+        {# Aperçu des points #}
+        {% if selectedAstronautIds|length > 0 %}
+            <div class="mb-4 bg-indigo-900/30 border border-indigo-700 rounded-lg px-4 py-3">
+                <div class="text-sm text-indigo-300 font-medium mb-1">Aperçu des points</div>
+                <div class="flex flex-wrap gap-3">
+                    {% for astronaut in this.selectedAstronauts %}
+                        <div class="flex items-center gap-2 text-sm">
+                            <div class="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-300">
+                                {{ astronaut.firstName|first }}{{ astronaut.lastName|first }}
+                            </div>
+                            <span class="text-gray-300">{{ astronaut.firstName }}</span>
+                            <span class="text-indigo-400 font-bold">+{{ this.basePoints }} pts</span>
+                            <span class="text-xs text-gray-500">(+ éventuels bonus)</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if allowsMultiple and selectedAstronautIds|length > 1 %}
+                    <div class="mt-2 text-xs text-gray-500">
+                        Total attribué : <span class="text-white font-semibold">{{ this.estimatedPoints }} pts</span> (hors bonus)
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% endif %}
+
+    {# Note #}
+    <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-400 mb-1">Note (optionnelle)</label>
+        <textarea
+            data-model="note"
+            rows="2"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 placeholder-gray-600"
+            placeholder="Contexte, lien, remarque..."
+        >{{ note }}</textarea>
+    </div>
+</div>

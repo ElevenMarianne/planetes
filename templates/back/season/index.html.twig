@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Saisons — Back-office{% endblock %}
+
+{% block body %}
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem;">
+    <div>
+        <div class="header-tags">
+            <span class="h-tag red">BACK-OFFICE</span>
+            <span class="h-tag amber">{{ seasons|length }} SAISONS</span>
+        </div>
+        <p class="page-title">SAISONS</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ path('back_dashboard') }}" class="btn btn-ghost btn-sm">← TABLEAU DE BORD</a>
+        <a href="{{ path('back_seasons_new') }}" class="btn btn-primary btn-sm">+ NOUVELLE</a>
+    </div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 1px; border: 1px solid var(--border); background: var(--border);">
+    {% for season in seasons %}
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem;
+                    background: {% if season.isActive %}var(--red-faint){% else %}var(--panel){% endif %};">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                {% if season.isActive %}
+                    <span class="dot green"></span>
+                {% else %}
+                    <span class="dot" style="background: var(--border);"></span>
+                {% endif %}
+                <div>
+                    <div style="font-family: var(--font-display); font-size: 1rem; letter-spacing: 3px;
+                                color: {% if season.isActive %}var(--red){% else %}var(--text){% endif %};">
+                        {{ season.name|upper }}
+                    </div>
+                    <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-subtle);
+                                letter-spacing: 1px; margin-top: 2px;">
+                        {{ season.startDate|date('d/m/Y') }} — {{ season.endDate|date('d/m/Y') }}
+                    </div>
+                </div>
+                {% if season.isActive %}
+                    <span class="badge badge-accent">EN COURS</span>
+                {% else %}
+                    <span class="badge badge-muted">TERMINÉE</span>
+                {% endif %}
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                {% if season.isActive %}
+                    <form method="post" action="{{ path('back_seasons_close', {id: season.id}) }}"
+                          onsubmit="return confirm('Clôturer cette saison ? Le trophée planète sera attribué automatiquement.')">
+                        <button type="submit" class="btn btn-sm"
+                                style="color: var(--amber); border-color: color-mix(in srgb, var(--amber) 25%, transparent);">
+                            🏆 CLÔTURER
+                        </button>
+                    </form>
+                {% else %}
+                    <form method="post" action="{{ path('back_seasons_activate', {id: season.id}) }}">
+                        <button type="submit" class="btn btn-ghost btn-sm">ACTIVER</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <!-- Corona extérieure diffuse -->
+    <radialGradient id="corona" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#fff8e1" stop-opacity="0"/>
+      <stop offset="40%"  stop-color="#ffe082" stop-opacity="0"/>
+      <stop offset="68%"  stop-color="#ffb300" stop-opacity="0.18"/>
+      <stop offset="80%"  stop-color="#ff8f00" stop-opacity="0.32"/>
+      <stop offset="90%"  stop-color="#e65100" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#e65100" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Sphère principale -->
+    <radialGradient id="sphere" cx="38%" cy="32%" r="62%">
+      <stop offset="0%"   stop-color="#fff9c4"/>
+      <stop offset="18%"  stop-color="#fff176"/>
+      <stop offset="38%"  stop-color="#ffca28"/>
+      <stop offset="58%"  stop-color="#ff8f00"/>
+      <stop offset="78%"  stop-color="#e65100"/>
+      <stop offset="100%" stop-color="#b71c1c"/>
+    </radialGradient>
+    <!-- Convection / granulation -->
+    <radialGradient id="granule1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#ffe082" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#ff8f00" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="granule2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#fff9c4" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ffca28" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Lueur interne -->
+    <radialGradient id="glow-inner" cx="42%" cy="35%" r="45%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="60%"  stop-color="#fff9c4" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#fff9c4" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Filtre flou pour corona -->
+    <filter id="blur-corona" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+    <filter id="blur-glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+    <filter id="blur-soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.5"/>
+    </filter>
+    <clipPath id="circle-clip">
+      <circle cx="60" cy="60" r="28"/>
+    </clipPath>
+  </defs>
+
+  <!-- Halo corona large -->
+  <circle cx="60" cy="60" r="58" fill="url(#corona)" filter="url(#blur-glow)"/>
+
+  <!-- Anneau corona intermédiaire -->
+  <circle cx="60" cy="60" r="38" fill="none"
+          stroke="#ff8f00" stroke-width="6" stroke-opacity="0.22"
+          filter="url(#blur-corona)"/>
+  <circle cx="60" cy="60" r="33" fill="none"
+          stroke="#ffca28" stroke-width="4" stroke-opacity="0.18"
+          filter="url(#blur-corona)"/>
+
+  <!-- Sphère solaire -->
+  <circle cx="60" cy="60" r="28" fill="url(#sphere)"/>
+
+  <!-- Granulation convective (taches claires) -->
+  <g clip-path="url(#circle-clip)">
+    <ellipse cx="52" cy="55" rx="9" ry="7"  fill="url(#granule1)" filter="url(#blur-soft)" opacity="0.6"/>
+    <ellipse cx="70" cy="62" rx="7" ry="6"  fill="url(#granule1)" filter="url(#blur-soft)" opacity="0.5"/>
+    <ellipse cx="60" cy="48" rx="8" ry="5"  fill="url(#granule2)" filter="url(#blur-soft)" opacity="0.55"/>
+    <ellipse cx="65" cy="72" rx="6" ry="4"  fill="url(#granule1)" filter="url(#blur-soft)" opacity="0.4"/>
+    <ellipse cx="45" cy="67" rx="5" ry="4"  fill="url(#granule2)" filter="url(#blur-soft)" opacity="0.45"/>
+
+    <!-- Taches solaires -->
+    <ellipse cx="67" cy="56" rx="3.5" ry="2.5" fill="#7f3100" opacity="0.55" filter="url(#blur-soft)"/>
+    <ellipse cx="69" cy="57" rx="1.8" ry="1.3" fill="#3e1700" opacity="0.65"/>
+    <ellipse cx="50" cy="63" rx="2.5" ry="2"   fill="#7f3100" opacity="0.4" filter="url(#blur-soft)"/>
+    <ellipse cx="51" cy="63" rx="1.2" ry="1"   fill="#3e1700" opacity="0.55"/>
+
+    <!-- Reflet spéculaire -->
+    <ellipse cx="51" cy="48" rx="10" ry="7" fill="url(#glow-inner)"/>
+  </g>
+
+  <!-- Bord assombri (limbe) -->
+  <circle cx="60" cy="60" r="28" fill="none"
+          stroke="#7f2400" stroke-width="3" stroke-opacity="0.35"
+          filter="url(#blur-soft)"/>
+</svg>

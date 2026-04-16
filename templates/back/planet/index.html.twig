@@ -1,0 +1,84 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Planètes — Back-office{% endblock %}
+
+{% block body %}
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem;">
+    <div>
+        <div class="header-tags">
+            <span class="h-tag red">BACK-OFFICE</span>
+            <span class="h-tag amber">{{ planets|length }} UNITÉS</span>
+        </div>
+        <p class="page-title">PLANÈTES</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ path('back_dashboard') }}" class="btn btn-ghost btn-sm">← TABLEAU DE BORD</a>
+        <a href="{{ path('back_planets_new') }}" class="btn btn-primary btn-sm">+ NOUVELLE</a>
+    </div>
+</div>
+
+<div class="card" style="overflow: hidden; padding: 0;">
+    <table class="back-table">
+        <thead>
+            <tr>
+                <th>Planète</th>
+                <th>Type</th>
+                <th>Mantra</th>
+                <th style="text-align: right;">Astronautes</th>
+                <th style="text-align: right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for planet in planets %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            {% if planet.photo %}
+                                <img src="/uploads/{{ planet.photo }}" alt="{{ planet.name }}"
+                                     style="width: 1.75rem; height: 1.75rem; object-fit: contain;
+                                            filter: drop-shadow(0 2px 4px {{ planet.color }}50);">
+                            {% else %}
+                                <div style="width: 10px; height: 10px; background: {{ planet.color }}; flex-shrink: 0;"></div>
+                            {% endif %}
+                            <span style="font-family: var(--font-display); letter-spacing: 2px; color: {{ planet.color }};">
+                                {{ planet.name|upper }}
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge {% if planet.type.value == 'main' %}badge-accent{% elseif planet.type.value == 'newcomer' %}badge-success{% else %}badge-muted{% endif %}">
+                            {{ planet.type.label()|upper }}
+                        </span>
+                    </td>
+                    <td class="text-muted" style="max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {{ planet.mantra }}
+                    </td>
+                    <td style="text-align: right; font-family: var(--font-display); color: var(--text);">
+                        {{ planet.astronauts|length }}
+                    </td>
+                    <td style="text-align: right;">
+                        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                            <a href="{{ path('back_planets_edit', {id: planet.id}) }}" class="btn btn-ghost btn-sm">MODIFIER</a>
+                            <form method="post" action="{{ path('back_planets_delete', {id: planet.id}) }}" class="inline"
+                                  data-controller="confirm-delete"
+                                  data-confirm-delete-message-value="Supprimer {{ planet.name }} ?">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete_planet_' ~ planet.id) }}">
+                                <button type="submit" class="btn btn-sm"
+                                        style="color: var(--red); border-color: var(--red-faint);">SUPPRIMER</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-subtle);">
+                        Aucune planète.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

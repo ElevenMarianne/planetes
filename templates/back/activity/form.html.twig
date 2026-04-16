@@ -1,0 +1,679 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Attribuer des points — Back-office{% endblock %}
+
+{% block body %}
+<div style="max-width: 720px; margin: 0 auto; padding: 0 1rem;">
+
+    {# ── En-tête ── #}
+    <div style="margin-bottom: 2rem;">
+        <div class="header-tags">
+            <span class="h-tag red">BACK-OFFICE</span>
+            <span class="h-tag">ACTIVITÉS</span>
+        </div>
+        <p class="page-title">ATTRIBUER DES POINTS</p>
+    </div>
+
+    {{ form_start(form, {attr: {id: 'activity-form', autocomplete: 'off'}}) }}
+
+    {# ── Saison (readonly, info only) ── #}
+    <div class="af-section" style="margin-bottom: 1.5rem;">
+        <div class="af-section-label">SAISON EN COURS</div>
+        <div class="af-readonly-row">
+            <span class="af-dot af-dot--green"></span>
+            <span class="af-readonly-value">{{ activeSeason ? activeSeason.name : '— aucune saison active —' }}</span>
+            {% if not activeSeason %}
+                <span style="color: var(--red); font-family: var(--font-mono); font-size: 0.75rem; margin-left: 0.75rem;">
+                    ⚠ Aucune saison active — l'activité ne sera pas enregistrée correctement
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ── Type d'activité ── #}
+    <div class="af-section" style="margin-bottom: 1.5rem;">
+        <div class="af-section-label">TYPE D'ACTIVITÉ</div>
+        <div class="af-field-wrap">
+            {{ form_widget(form.type, {attr: {class: 'af-select'}}) }}
+            {{ form_errors(form.type) }}
+        </div>
+    </div>
+
+    {# ── Sélection planète (PLANET_ONLY) ── #}
+    <div class="af-section" id="planet-only-section" style="margin-bottom: 1.5rem; display:none;">
+        <div class="af-section-label">PLANÈTE</div>
+        <div class="af-field-wrap">
+            {{ form_widget(form.planet, {attr: {class: 'af-select', id: 'planet-only-select'}}) }}
+            {{ form_errors(form.planet) }}
+        </div>
+    </div>
+
+    {# ── Sélection astronaute(s) ── #}
+    <div class="af-section" id="astronaut-section" style="margin-bottom: 1.5rem;">
+        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.6rem;">
+            <div class="af-section-label" style="margin-bottom:0; flex:1;">ASTRONAUTE(S)</div>
+            <span id="astronaut-quota-badge" class="af-quota-badge" style="display:none;"></span>
+        </div>
+
+        {# Champ select caché — utilisé pour la soumission #}
+        <div style="display: none;">
+            {{ form_widget(form.astronauts) }}
+        </div>
+
+        {# Recherche custom #}
+        <div class="af-autocomplete" id="astronaut-ac">
+            <div class="af-search-wrap">
+                <svg class="af-search-icon" viewBox="0 0 16 16" fill="none">
+                    <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <input
+                    type="text"
+                    id="astronaut-search"
+                    class="af-search-input"
+                    placeholder="Rechercher par nom ou prénom…"
+                    autocomplete="off"
+                    spellcheck="false"
+                />
+            </div>
+
+            {# Dropdown résultats #}
+            <div class="af-dropdown" id="astronaut-dropdown" style="display:none;"></div>
+
+            {# Chips astronautes sélectionnés #}
+            <div class="af-chips" id="astronaut-chips"></div>
+        </div>
+
+        {{ form_errors(form.astronauts) }}
+    </div>{# /astronaut-section #}
+
+    {# ── Planète déduite de l'astronaute (affiché quand astronaute sélectionné) ── #}
+    <div class="af-section" style="margin-bottom: 1.5rem;" id="planet-section">
+        <div class="af-section-label">PLANÈTE CRÉDITÉE</div>
+        <div id="planet-display" class="af-readonly-row">
+            <span style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-subtle); font-style: italic;">
+                — sélectionner un astronaute —
+            </span>
+        </div>
+    </div>
+
+    {# ── Note ── #}
+    <div class="af-section" style="margin-bottom: 1.5rem;">
+        <div class="af-section-label">NOTE <span style="opacity:.5;">(optionnelle)</span></div>
+        <div class="af-field-wrap">
+            {{ form_widget(form.note, {attr: {class: 'af-textarea'}}) }}
+        </div>
+    </div>
+
+    {# ── Info calcul ── #}
+    <div class="af-info-band" style="margin-bottom: 1.5rem;">
+        <span class="af-info-icon">ℹ</span>
+        <span>
+            Points calculés automatiquement selon le type d'activité et les bonus applicables
+            <span style="color: var(--amber);">(+25 pts 1ère contribution saison · ×2 1ère contribution ever)</span>
+        </span>
+    </div>
+
+    {# ── Actions ── #}
+    <div style="display: flex; gap: 0.75rem; padding-bottom: 3rem;">
+        <button type="submit" class="btn btn-primary" style="min-width: 220px;">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;">
+                <path d="M2 8L6 12L14 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            ATTRIBUER LES POINTS
+        </button>
+        <a href="{{ path('back_activities_index') }}" class="btn btn-ghost">ANNULER</a>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+
+{# ── Styles du formulaire ── #}
+<style>
+.af-section-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--red);
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.af-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(198,40,40,0.3), transparent);
+}
+
+.af-field-wrap { position: relative; }
+
+.af-select {
+    width: 100%;
+    background: #0f0f0f;
+    border: 1px solid #2a2a2a;
+    color: #e0e0e0;
+    padding: 0.7rem 1rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+    transition: border-color 0.15s;
+}
+.af-select:focus { border-color: var(--red); box-shadow: 0 0 0 1px var(--red-faint); }
+.af-select option { background: #111; color: #e0e0e0; }
+
+.af-textarea {
+    width: 100%;
+    background: #0f0f0f;
+    border: 1px solid #2a2a2a;
+    color: #e0e0e0;
+    padding: 0.7rem 1rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    outline: none;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.15s;
+}
+.af-textarea:focus { border-color: var(--red); box-shadow: 0 0 0 1px var(--red-faint); }
+.af-textarea::placeholder { color: #444; }
+
+/* Readonly row */
+.af-readonly-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 1rem;
+    background: #0f0f0f;
+    border: 1px solid #1e1e1e;
+    border-left: 3px solid #2a2a2a;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+}
+.af-readonly-value { color: #d0d0d0; letter-spacing: 0.03em; }
+.af-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.af-dot--green { background: var(--green-bright); box-shadow: 0 0 5px var(--green-bright); }
+.af-dot--amber { background: var(--amber); box-shadow: 0 0 5px var(--amber); }
+
+/* Autocomplete */
+.af-autocomplete { position: relative; }
+.af-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.af-search-icon {
+    position: absolute;
+    left: 0.875rem;
+    width: 15px; height: 15px;
+    color: #555;
+    pointer-events: none;
+    flex-shrink: 0;
+}
+.af-search-input {
+    width: 100%;
+    background: #0f0f0f;
+    border: 1px solid #2a2a2a;
+    color: #e0e0e0;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.af-search-input:focus { border-color: var(--red); box-shadow: 0 0 0 1px var(--red-faint); }
+.af-search-input::placeholder { color: #444; }
+
+.af-dropdown {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0; right: 0;
+    background: #141414;
+    border: 1px solid #2a2a2a;
+    border-top: 2px solid var(--red);
+    z-index: 200;
+    max-height: 320px;
+    overflow-y: auto;
+}
+.af-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.875rem;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: 1px solid #1a1a1a;
+}
+.af-dropdown-item:last-child { border-bottom: none; }
+.af-dropdown-item:hover,
+.af-dropdown-item.focused { background: rgba(198,40,40,0.08); }
+.af-dropdown-item.already-selected { opacity: 0.4; pointer-events: none; }
+
+.af-avatar {
+    width: 36px; height: 36px;
+    border-radius: 0;
+    border: 1px solid #2a2a2a;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #111;
+}
+.af-avatar-initials {
+    width: 36px; height: 36px;
+    border: 1px solid #2a2a2a;
+    background: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 14px;
+    color: #666;
+    flex-shrink: 0;
+}
+.af-item-info { flex: 1; min-width: 0; }
+.af-item-name {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #e8e8e8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.af-item-meta {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: #555;
+    margin-top: 1px;
+}
+.af-item-planet {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border: 1px solid;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.af-no-results {
+    padding: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: #555;
+    text-align: center;
+}
+
+/* Chips */
+.af-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+.af-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem 0.35rem 0.4rem;
+    background: #111;
+    border: 1px solid #2a2a2a;
+    transition: border-color 0.15s;
+    animation: chip-in 0.15s ease-out both;
+}
+@keyframes chip-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.af-chip:hover { border-color: rgba(198,40,40,0.4); }
+.af-chip-avatar {
+    width: 24px; height: 24px;
+    border-radius: 0;
+    object-fit: cover;
+    border: 1px solid #1e1e1e;
+    flex-shrink: 0;
+}
+.af-chip-initials {
+    width: 24px; height: 24px;
+    background: #1a1a1a;
+    border: 1px solid #1e1e1e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 10px;
+    color: #666;
+    flex-shrink: 0;
+}
+.af-chip-name {
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #d8d8d8;
+}
+.af-chip-planet {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    padding: 1px 5px;
+    border: 1px solid;
+}
+.af-chip-remove {
+    width: 18px; height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 2px;
+    transition: color 0.15s;
+    font-size: 14px;
+    line-height: 1;
+}
+.af-chip-remove:hover { color: var(--red); }
+
+/* Planet display */
+.af-planet-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid;
+}
+
+/* Quota badge */
+.af-quota-badge {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    padding: 2px 8px;
+    border: 1px solid;
+    white-space: nowrap;
+}
+.af-quota-badge.solo   { color: #90a4ae; border-color: #2a2a2a; background: rgba(144,164,174,0.06); }
+.af-quota-badge.duo    { color: var(--amber); border-color: rgba(255,143,0,0.3); background: rgba(255,143,0,0.05); }
+.af-quota-badge.ok     { color: var(--green-bright); border-color: rgba(102,187,106,0.3); background: rgba(102,187,106,0.05); }
+.af-quota-badge.error  { color: var(--red); border-color: rgba(198,40,40,0.4); background: var(--red-faint); }
+
+/* Champ recherche désactivé */
+.af-search-input:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* Info band */
+.af-info-band {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+    background: rgba(92,107,192,0.06);
+    border: 1px solid rgba(92,107,192,0.2);
+    border-left: 3px solid rgba(92,107,192,0.6);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: #8899bb;
+    line-height: 1.6;
+}
+.af-info-icon {
+    color: rgba(92,107,192,0.8);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+</style>
+
+{# ── Script autocomplete + quota ── #}
+<script>
+(function () {
+    const SEARCH_URL       = '{{ path('back_astronauts_search') }}';
+    // Map id (number) → {allowsMultiple, planetOnly}
+    const TYPES_MAP        = {{ activityTypesMap|json_encode|raw }};
+
+    // Utiliser les IDs générés par Symfony
+    const hiddenSelect     = document.getElementById('{{ form.astronauts.vars.id }}');
+    const typeSelect       = document.getElementById('{{ form.type.vars.id }}');
+    const searchInput      = document.getElementById('astronaut-search');
+    const dropdown         = document.getElementById('astronaut-dropdown');
+    const chipsWrap        = document.getElementById('astronaut-chips');
+    const planetDisplay    = document.getElementById('planet-display');
+    const quotaBadge       = document.getElementById('astronaut-quota-badge');
+    const astronautSection = document.getElementById('astronaut-section');
+    const planetOnlySection= document.getElementById('planet-only-section');
+    const planetSection    = document.getElementById('planet-section');
+
+    let results      = [];
+    let focusedIdx   = -1;
+    let selected     = []; // [{id, fullName, email, photo, planetId, planetName, planetColor, planetPhoto}]
+    let debounceTimer = null;
+    let maxAllowed   = null; // null = pas encore de type choisi, 1 = solo, 2 = duo
+
+    /* ── Affichage selon le type sélectionné ── */
+    function isPlanetOnlyType() {
+        const id = parseInt(typeSelect.value, 10);
+        if (!id || TYPES_MAP[id] === undefined) return false;
+        return TYPES_MAP[id].planetOnly === true;
+    }
+
+    function getMaxFromType() {
+        const id = parseInt(typeSelect.value, 10);
+        if (!id || TYPES_MAP[id] === undefined) return null;
+        if (TYPES_MAP[id].planetOnly) return null;
+        return TYPES_MAP[id].allowsMultiple ? 2 : 1;
+    }
+
+    function toggleSections() {
+        const planetOnly = isPlanetOnlyType();
+        astronautSection.style.display  = planetOnly ? 'none' : '';
+        planetSection.style.display     = planetOnly ? 'none' : '';
+        planetOnlySection.style.display = planetOnly ? '' : 'none';
+        // Désactiver le select caché astronautes pour exclure la validation native du navigateur
+        hiddenSelect.disabled = planetOnly;
+    }
+
+    function updateQuota() {
+        maxAllowed = getMaxFromType();
+        const count = selected.length;
+
+        quotaBadge.style.display = maxAllowed === null ? 'none' : 'inline';
+
+        if (maxAllowed === null) {
+            searchInput.disabled = false;
+            return;
+        }
+
+        if (maxAllowed === 1) {
+            quotaBadge.className = count === 1 ? 'af-quota-badge ok' : 'af-quota-badge solo';
+            quotaBadge.textContent = count === 1 ? '✓ 1 ASTRONAUTE' : '1 ASTRONAUTE';
+        } else {
+            if (count === 0)      { quotaBadge.className = 'af-quota-badge duo';   quotaBadge.textContent = 'DUO — 2 ASTRONAUTES'; }
+            else if (count === 1) { quotaBadge.className = 'af-quota-badge duo';   quotaBadge.textContent = 'DUO — + 1 REQUIS'; }
+            else                  { quotaBadge.className = 'af-quota-badge ok';    quotaBadge.textContent = '✓ DUO COMPLET'; }
+        }
+
+        // Bloquer la recherche si quota atteint
+        const full = maxAllowed !== null && count >= maxAllowed;
+        searchInput.disabled = full;
+        if (full) {
+            searchInput.placeholder = maxAllowed === 1
+                ? 'Activité individuelle — 1 astronaute max'
+                : 'Duo complet — 2 astronautes sélectionnés';
+            hideDropdown();
+        } else {
+            searchInput.placeholder = 'Rechercher par nom ou prénom…';
+        }
+    }
+
+    /* ── Utilitaires ── */
+    function initials(name) {
+        return name.split(' ').map(p => p[0] || '').slice(0, 2).join('').toUpperCase();
+    }
+    function avatarHtml(photo, name, cls) {
+        if (photo) return `<img src="/uploads/${photo}" alt="${name}" class="${cls}">`;
+        const ic = cls.includes('chip') ? 'af-chip-initials' : 'af-avatar-initials';
+        return `<div class="${ic}">${initials(name)}</div>`;
+    }
+
+    /* ── Sync select hidden ── */
+    function syncSelect() {
+        Array.from(hiddenSelect.options).forEach(o => { o.selected = selected.some(s => s.id == o.value); });
+    }
+
+    /* ── Planète ── */
+    function updatePlanetDisplay() {
+        const planets = [...new Map(
+            selected.filter(s => s.planetId).map(s => [s.planetId, s])
+        ).values()];
+
+        if (planets.length === 0) {
+            planetDisplay.innerHTML = `<span style="font-family:var(--font-mono);font-size:.85rem;color:var(--text-subtle);font-style:italic;">— sélectionner un astronaute —</span>`;
+            return;
+        }
+        planetDisplay.innerHTML = planets.map(s => {
+            const icon = s.planetPhoto ? `<img src="/uploads/${s.planetPhoto}" style="width:18px;height:18px;object-fit:contain;" alt="">` : '';
+            return `<span class="af-planet-badge" style="color:${s.planetColor};border-color:${s.planetColor}40;background:${s.planetColor}10;">${icon}${s.planetName}</span>`;
+        }).join('');
+    }
+
+    /* ── Dropdown ── */
+    function renderDropdown() {
+        if (results.length === 0) {
+            dropdown.innerHTML = `<div class="af-no-results">Aucun résultat</div>`;
+            focusedIdx = -1;
+            return;
+        }
+        dropdown.innerHTML = results.map((a, i) => {
+            const alreadySel = selected.some(s => s.id === a.id);
+            const avatar = avatarHtml(a.photo, a.fullName, 'af-avatar');
+            const planet = a.planetName
+                ? `<span class="af-item-planet" style="color:${a.planetColor};border-color:${a.planetColor}40;">${a.planetName}</span>`
+                : '';
+            return `<div class="af-dropdown-item${alreadySel ? ' already-selected' : ''}" data-idx="${i}">
+                ${avatar}
+                <div class="af-item-info">
+                    <div class="af-item-name">${a.fullName}</div>
+                    <div class="af-item-meta">${a.email}</div>
+                </div>
+                ${planet}
+            </div>`;
+        }).join('');
+
+        dropdown.querySelectorAll('.af-dropdown-item:not(.already-selected)').forEach(el => {
+            el.addEventListener('mousedown', e => { e.preventDefault(); selectAstronaut(results[+el.dataset.idx]); });
+        });
+    }
+
+    function showDropdown() { if (!searchInput.disabled) dropdown.style.display = 'block'; }
+    function hideDropdown() { dropdown.style.display = 'none'; focusedIdx = -1; }
+
+    /* ── Sélection ── */
+    function selectAstronaut(a) {
+        if (selected.some(s => s.id === a.id)) return;
+        // Bloquer si quota déjà atteint
+        if (maxAllowed !== null && selected.length >= maxAllowed) return;
+        selected.push(a);
+        syncSelect();
+        updatePlanetDisplay();
+        renderChips();
+        updateQuota();
+        searchInput.value = '';
+        hideDropdown();
+    }
+
+    function removeAstronaut(id) {
+        selected = selected.filter(s => s.id !== id);
+        syncSelect();
+        updatePlanetDisplay();
+        renderChips();
+        updateQuota();
+    }
+
+    /* ── Chips ── */
+    function renderChips() {
+        if (selected.length === 0) { chipsWrap.innerHTML = ''; return; }
+        chipsWrap.innerHTML = selected.map(a => {
+            const avatar = a.photo
+                ? `<img src="/uploads/${a.photo}" class="af-chip-avatar" alt="${a.fullName}">`
+                : `<div class="af-chip-initials">${initials(a.fullName)}</div>`;
+            const planet = a.planetName
+                ? `<span class="af-chip-planet" style="color:${a.planetColor};border-color:${a.planetColor}40;">${a.planetName}</span>`
+                : '';
+            return `<div class="af-chip" data-id="${a.id}">
+                ${avatar}
+                <span class="af-chip-name">${a.fullName}</span>
+                ${planet}
+                <button type="button" class="af-chip-remove" title="Retirer">×</button>
+            </div>`;
+        }).join('');
+
+        chipsWrap.querySelectorAll('.af-chip-remove').forEach(btn => {
+            btn.addEventListener('click', () => removeAstronaut(+btn.closest('.af-chip').dataset.id));
+        });
+    }
+
+    /* ── Fetch ── */
+    function fetchResults(q) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+            if (q.length < 1) { hideDropdown(); return; }
+            const res = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(q)}`);
+            results = await res.json();
+            renderDropdown();
+            showDropdown();
+        }, 180);
+    }
+
+    /* ── Navigation clavier ── */
+    function moveFocus(dir) {
+        const items = dropdown.querySelectorAll('.af-dropdown-item:not(.already-selected)');
+        if (!items.length) return;
+        items.forEach(el => el.classList.remove('focused'));
+        focusedIdx = (focusedIdx + dir + items.length) % items.length;
+        items[focusedIdx].classList.add('focused');
+        items[focusedIdx].scrollIntoView({ block: 'nearest' });
+    }
+
+    /* ── Événements ── */
+    typeSelect.addEventListener('change', () => {
+        toggleSections();
+        // Vider la sélection astronautes si le nouveau type est incompatible avec le nombre actuel
+        const newMax = getMaxFromType();
+        if (newMax !== null && selected.length > newMax) {
+            selected = selected.slice(0, newMax);
+            syncSelect();
+            updatePlanetDisplay();
+            renderChips();
+        }
+        updateQuota();
+    });
+
+    searchInput.addEventListener('input', e => fetchResults(e.target.value.trim()));
+    searchInput.addEventListener('focus', () => { if (searchInput.value.trim()) showDropdown(); });
+    searchInput.addEventListener('blur', () => setTimeout(hideDropdown, 150));
+    searchInput.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); moveFocus(1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); moveFocus(-1); }
+        else if (e.key === 'Enter') {
+            e.preventDefault();
+            const focused = dropdown.querySelector('.af-dropdown-item.focused');
+            if (focused) focused.dispatchEvent(new Event('mousedown'));
+        }
+        else if (e.key === 'Escape') hideDropdown();
+    });
+
+    // Init
+    toggleSections();
+    updateQuota();
+    updatePlanetDisplay();
+})();
+</script>
+{% endblock %}

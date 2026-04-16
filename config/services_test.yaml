@@ -1,0 +1,11 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: true
+
+    App\Command\AnniversaryCheckCommand: ~
+    App\Repository\AstronautRepository: ~
+    App\Repository\ActivityTypeRepository: ~
+    App\Service\SeasonService: ~
+    App\Service\PlanetSeasonPointsService: ~

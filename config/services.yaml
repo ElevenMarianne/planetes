@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
+
+parameters:
+    slack_webhook_url: '%env(default::SLACK_WEBHOOK_URL)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+
+    # Injection du SLACK_WEBHOOK_URL dans les handlers Slack
+    App\MessageHandler\SlackPointsNotificationHandler:
+        arguments:
+            $slackWebhookUrl: '%slack_webhook_url%'
+
+    App\MessageHandler\SlackTrophyNotificationHandler:
+        arguments:
+            $slackWebhookUrl: '%slack_webhook_url%'
+
+    App\MessageHandler\SlackAnniversaryNotificationHandler:
+        arguments:
+            $slackWebhookUrl: '%slack_webhook_url%'
+
+    App\MessageHandler\SlackAttendanceNotificationHandler:
+        arguments:
+            $slackWebhookUrl: '%slack_webhook_url%'
+
+    # Flysystem : binding du storage 'uploads.storage'
+    League\Flysystem\FilesystemOperator $uploadsStorage:
+        alias: 'uploads.storage'
+

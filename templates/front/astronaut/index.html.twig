@@ -1,0 +1,448 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Astronautes — Eleven Galaxy{% endblock %}
+
+{% block body %}
+<style>
+/* ── Hover "TARGET LOCKED" ──────────────────────────────────────── */
+.astronaut-card {
+    transition: transform 0.3s cubic-bezier(0.2,0,0,1),
+                background 0.3s,
+                box-shadow 0.35s;
+    overflow: visible !important;
+}
+.astronaut-card:hover {
+    transform: translateY(-8px) scale(1.05);
+    background: color-mix(in srgb, var(--card-color) 10%, var(--panel)) !important;
+    box-shadow:
+        0 0 0 1px var(--card-color),
+        0 12px 40px color-mix(in srgb, var(--card-color) 35%, transparent),
+        inset 0 0 60px color-mix(in srgb, var(--card-color) 6%, transparent);
+    z-index: 10;
+}
+
+/* Corner brackets */
+.astronaut-card .c-brk {
+    position: absolute;
+    width: 0; height: 0;
+    border-color: var(--card-color);
+    border-style: solid;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 5;
+    transition: opacity 0.2s, width 0.2s cubic-bezier(0.2,0,0,1), height 0.2s cubic-bezier(0.2,0,0,1);
+}
+.astronaut-card:hover .c-brk       { opacity: 1; width: 14px; height: 14px; }
+.astronaut-card .c-brk.tl { top: 4px;    left: 4px;    border-width: 2px 0 0 2px; }
+.astronaut-card .c-brk.tr { top: 4px;    right: 4px;   border-width: 2px 2px 0 0; }
+.astronaut-card .c-brk.bl { bottom: 4px; left: 4px;    border-width: 0 0 2px 2px; }
+.astronaut-card .c-brk.br { bottom: 4px; right: 4px;   border-width: 0 2px 2px 0; }
+
+/* Scan line */
+.astronaut-card .c-scan {
+    position: absolute;
+    left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--card-color) 40%, var(--card-color) 60%, transparent 100%);
+    top: 0; opacity: 0;
+    pointer-events: none; z-index: 4;
+}
+.astronaut-card:hover .c-scan {
+    animation: c-scan-move 0.7s linear forwards;
+}
+@keyframes c-scan-move {
+    0%   { top: 0%;   opacity: 0; }
+    5%   {            opacity: 0.9; }
+    92%  {            opacity: 0.9; }
+    100% { top: 100%; opacity: 0; }
+}
+
+/* Avatar wrapper */
+.astronaut-card .avatar-wrap {
+    position: relative;
+    width: 3.75rem;
+    margin: 0 auto 0.875rem;
+}
+.astronaut-card .avatar-wrap .avatar {
+    transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+.astronaut-card:hover .avatar-wrap .avatar {
+    transform: scale(1.1);
+}
+
+/* Scan ring */
+.astronaut-card .scan-ring {
+    position: absolute;
+    inset: -8px;
+    border: 1px solid transparent;
+    border-top-color: var(--card-color);
+    border-bottom-color: color-mix(in srgb, var(--card-color) 40%, transparent);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+}
+.astronaut-card .scan-ring-2 {
+    position: absolute;
+    inset: -4px;
+    border: 1px solid transparent;
+    border-right-color: var(--card-color);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s 0.05s;
+}
+.astronaut-card:hover .scan-ring   { opacity: 0.9; animation: c-spin 1.8s linear infinite; }
+.astronaut-card:hover .scan-ring-2 { opacity: 0.6; animation: c-spin 1.1s linear infinite reverse; }
+@keyframes c-spin { to { transform: rotate(360deg); } }
+
+/* Nom décryptable */
+.astronaut-card .c-fname {
+    transition: color 0.2s, letter-spacing 0.3s;
+}
+.astronaut-card:hover .c-fname {
+    color: var(--card-color) !important;
+    letter-spacing: 2px;
+}
+
+/* Lock label */
+.astronaut-card .lock-label {
+    position: absolute;
+    bottom: 7px;
+    left: 0; right: 0;
+    font-family: var(--font-mono);
+    font-size: 0.42rem;
+    letter-spacing: 2.5px;
+    text-align: center;
+    color: var(--card-color);
+    opacity: 0;
+    transform: translateY(3px);
+    pointer-events: none;
+    transition: opacity 0.2s 0.18s, transform 0.2s 0.18s;
+}
+.astronaut-card:hover .lock-label {
+    opacity: 0.85;
+    transform: translateY(0);
+}
+
+/* Ligne top intensifiée */
+.astronaut-card .c-top-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--card-color);
+    opacity: 0.45;
+    transition: opacity 0.3s, height 0.3s;
+}
+.astronaut-card:hover .c-top-bar {
+    opacity: 1;
+    height: 2px;
+    box-shadow: 0 0 8px var(--card-color), 0 0 2px var(--card-color);
+}
+</style>
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.25rem; gap: 1.5rem; flex-wrap: wrap;">
+    <div>
+        <div class="header-tags">
+            <span class="h-tag red">REGISTRE DES ASTRONAUTES</span>
+            <span id="count-badge" class="h-tag amber">{{ astronauts|length }}</span>
+        </div>
+        <p class="page-title">ASTRONAUTES</p>
+    </div>
+    <div style="position: relative; display: flex; align-items: center;">
+        <svg style="position:absolute; left:0.75rem; width:14px; height:14px; color:#555; pointer-events:none; flex-shrink:0;"
+             viewBox="0 0 16 16" fill="none">
+            <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <input type="search" id="astronaut-q"
+               placeholder="RECHERCHER…"
+               autocomplete="off" spellcheck="false"
+               class="input"
+               style="width: 220px; padding-left: 2.25rem; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 1px;">
+    </div>
+</div>
+
+{# Filtres planètes #}
+<div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; align-items: center;
+            padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
+    <button type="button" class="planet-filter active"
+            data-planet=""
+            style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.875rem;
+                   font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; letter-spacing: 2px;
+                   text-transform: uppercase; border: 1px solid; cursor: pointer; background: var(--red-faint);
+                   border-color: var(--red); color: var(--red);">
+        TOUTES
+    </button>
+    {% for planet in planets %}
+        <button type="button" class="planet-filter"
+                data-planet="{{ planet.id }}"
+                data-color="{{ planet.color }}"
+                style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.875rem;
+                       font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; letter-spacing: 2px;
+                       text-transform: uppercase; border: 1px solid; cursor: pointer;
+                       background: transparent; border-color: {{ planet.color }}40; color: {{ planet.color }}99;">
+            {% if planet.photo %}
+                <img src="/uploads/{{ planet.photo }}" alt="" style="width: 1.125rem; height: 1.125rem; object-fit: contain;">
+            {% else %}
+                <span style="font-size: 0.875rem;">☄️</span>
+            {% endif %}
+            {{ planet.name|upper }}
+        </button>
+    {% endfor %}
+</div>
+
+{# Filtres squads #}
+<div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2.5rem; align-items: center;
+            padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
+    <button type="button" class="squad-filter active"
+            data-squad=""
+            style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.875rem;
+                   font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; letter-spacing: 2px;
+                   text-transform: uppercase; border: 1px solid; cursor: pointer; background: var(--red-faint);
+                   border-color: var(--red); color: var(--red);">
+        TOUTES
+    </button>
+    {% for squad in squads %}
+        {% set squadPicto = squad.value == 'paris' ? '🗼' : (squad.value == 'nantes' ? '🏰' : '🚜') %}
+        <button type="button" class="squad-filter"
+                data-squad="{{ squad.value }}"
+                style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.875rem;
+                       font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; letter-spacing: 2px;
+                       text-transform: uppercase; border: 1px solid; cursor: pointer;
+                       background: transparent; border-color: var(--border); color: var(--text-muted);">
+            {{ squadPicto }} {{ squad.label()|upper }}
+        </button>
+    {% endfor %}
+</div>
+
+{# Grille astronautes — toutes les cartes sont rendues, JS gère la visibilité #}
+<div id="astronaut-grid"
+     style="display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 1px;
+            border: 1px solid var(--border); background: var(--border); padding-top: 1.5rem;">
+    {% for astronaut in astronauts %}
+        {% set planetColor = astronaut.planet ? astronaut.planet.color : 'var(--red)' %}
+        <a href="{{ path('front_astronauts_show', {id: astronaut.id}) }}"
+           class="unit-card astronaut-card"
+           data-planet="{{ astronaut.planet ? astronaut.planet.id : '' }}"
+           data-squad="{{ astronaut.squad.value }}"
+           data-name="{{ (astronaut.firstName ~ ' ' ~ astronaut.lastName)|lower }}"
+           style="padding: 1.25rem 1rem 1.5rem; text-align: center; display: block; text-decoration: none;
+                  position: relative; overflow: visible;
+                  --card-color: {{ planetColor }};
+                  animation: card-init 0.4s ease-out both;">
+
+            {# Brackets de visée #}
+            <div class="c-brk tl"></div>
+            <div class="c-brk tr"></div>
+            <div class="c-brk bl"></div>
+            <div class="c-brk br"></div>
+
+            {# Scan line #}
+            <div class="c-scan"></div>
+
+            {# Barre top colorée #}
+            <div class="c-top-bar"></div>
+
+            {% set squadPicto = astronaut.squad.value == 'paris' ? '🗼' : (astronaut.squad.value == 'nantes' ? '🏰' : '🚜') %}
+            <div style="position: absolute; top: -20px; right: 8px; width: 2.5rem; height: 2.5rem;">
+                {% if astronaut.planet and astronaut.planet.photo %}
+                    <img src="/uploads/{{ astronaut.planet.photo }}" alt="{{ astronaut.planet.name }}"
+                         style="width: 2.5rem; height: 2.5rem; object-fit: contain;
+                                filter: drop-shadow(0 3px 6px {{ planetColor }}70);
+                                transition: transform 0.25s ease;">
+                {% else %}
+                    <span style="font-size: 1.5rem; filter: drop-shadow(0 2px 5px rgba(198,40,40,0.4));">☄️</span>
+                {% endif %}
+                <span title="{{ astronaut.squad.label() }}"
+                      style="position: absolute; bottom: -6px; right: -8px;
+                             font-size: 1.1rem; line-height: 1; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));">{{ squadPicto }}</span>
+            </div>
+
+            {# Avatar + anneaux de visée #}
+            <div class="avatar-wrap">
+                <div class="avatar" style="width: 3.75rem; height: 3.75rem;
+                     border-color: {{ planetColor }}66;
+                     box-shadow: 0 0 0 2px {{ planetColor }}20, 0 4px 12px {{ planetColor }}30;">
+                    {% if astronaut.photo %}
+                        <img src="/uploads/{{ astronaut.photo }}" alt="{{ astronaut.fullName }}">
+                    {% else %}
+                        <span style="font-size: 1rem; font-family: var(--font-display);">{{ astronaut.firstName|first }}{{ astronaut.lastName|first }}</span>
+                    {% endif %}
+                </div>
+                <div class="scan-ring"></div>
+                <div class="scan-ring-2"></div>
+            </div>
+
+            <div class="c-fname"
+                 data-text="{{ astronaut.firstName }}"
+                 style="font-family: var(--font-display); font-size: 0.9375rem; letter-spacing: 1px; color: var(--text);
+                        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {{ astronaut.firstName }}
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted); letter-spacing: 1px;
+                        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.625rem;">
+                {{ astronaut.lastName|upper }}
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 0.3rem;">
+                <twig:GradeBadge :points="astronaut.totalPoints" />
+            </div>
+
+            {# Verrou cible #}
+            <div class="lock-label">◈ CIBLE VERROUILLÉE</div>
+
+        </a>
+    {% else %}
+        <div style="grid-column: 1/-1; text-align: center; padding: 4rem 0; background: var(--panel);">
+            <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-subtle); letter-spacing: 3px;">
+                AUCUN ASTRONAUTE
+            </p>
+        </div>
+    {% endfor %}
+
+    {# Message "aucun résultat" affiché par JS #}
+    <div id="no-results" style="display: none; grid-column: 1/-1; text-align: center; padding: 4rem 0; background: var(--panel);">
+        <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-subtle); letter-spacing: 3px;">
+            AUCUN ASTRONAUTE TROUVÉ
+        </p>
+    </div>
+</div>
+
+<script>
+(function () {
+    // ── Scramble text on hover ────────────────────────────────────────────────
+    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@!';
+
+    function scramble(el) {
+        const original = el.dataset.text || el.textContent.trim();
+        let frame = 0;
+        const steps = original.length * 4;
+        if (el._scrambleRaf) cancelAnimationFrame(el._scrambleRaf);
+
+        function tick() {
+            el.textContent = original.split('').map((c, i) => {
+                if (frame >= i * 4) return c;
+                return c === ' ' ? ' ' : CHARS[Math.floor(Math.random() * CHARS.length)];
+            }).join('');
+            frame++;
+            if (frame < steps) el._scrambleRaf = requestAnimationFrame(tick);
+            else el.textContent = original;
+        }
+        requestAnimationFrame(tick);
+    }
+
+    // ── Glow avatar on hover ──────────────────────────────────────────────────
+    document.querySelectorAll('.astronaut-card').forEach(card => {
+        const color  = getComputedStyle(card).getPropertyValue('--card-color').trim();
+        const avatar = card.querySelector('.avatar');
+        const fname  = card.querySelector('.c-fname');
+        const planet = card.querySelector('[src*="/uploads/"]');
+
+        card.addEventListener('mouseenter', () => {
+            if (avatar) {
+                avatar.style.borderColor  = color;
+                avatar.style.boxShadow    = `0 0 0 2px ${color}, 0 0 20px ${color}88`;
+            }
+            if (fname) scramble(fname);
+            if (planet) planet.style.transform = 'scale(1.2) rotate(-8deg)';
+        });
+        card.addEventListener('mouseleave', () => {
+            if (avatar) {
+                avatar.style.borderColor = '';
+                avatar.style.boxShadow   = '';
+            }
+            if (fname) fname.textContent = fname.dataset.text;
+            if (planet) planet.style.transform = '';
+        });
+    });
+
+    const cards      = Array.from(document.querySelectorAll('.astronaut-card'));
+    const searchInput = document.getElementById('astronaut-q');
+    const countBadge  = document.getElementById('count-badge');
+    const noResults   = document.getElementById('no-results');
+
+    let activePlanet = '';
+    let activeSquad  = '';
+    let searchQuery  = '';
+
+    function applyFilters() {
+        let visible = 0;
+
+        cards.forEach(card => {
+            const matchPlanet = activePlanet === '' || card.dataset.planet === activePlanet;
+            const matchSquad  = activeSquad  === '' || card.dataset.squad  === activeSquad;
+            const matchSearch = searchQuery  === '' || card.dataset.name.includes(searchQuery);
+
+            const show = matchPlanet && matchSquad && matchSearch;
+            card.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        countBadge.textContent = visible;
+        noResults.style.display = visible === 0 ? '' : 'none';
+    }
+
+    // ── Filtre planètes ──────────────────────────────────────────────────────
+    document.querySelectorAll('.planet-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            activePlanet = btn.dataset.planet;
+
+            document.querySelectorAll('.planet-filter').forEach(b => {
+                const color = b.dataset.color;
+                if (b === btn) {
+                    if (color) {
+                        b.style.background    = color + '18';
+                        b.style.borderColor   = color;
+                        b.style.color         = color;
+                    } else {
+                        b.style.background    = 'var(--red-faint)';
+                        b.style.borderColor   = 'var(--red)';
+                        b.style.color         = 'var(--red)';
+                    }
+                } else {
+                    if (color) {
+                        b.style.background  = 'transparent';
+                        b.style.borderColor = color + '40';
+                        b.style.color       = color + '99';
+                    } else {
+                        b.style.background  = 'transparent';
+                        b.style.borderColor = 'var(--border)';
+                        b.style.color       = 'var(--text-muted)';
+                    }
+                }
+            });
+
+            applyFilters();
+        });
+    });
+
+    // ── Filtre squads ────────────────────────────────────────────────────────
+    document.querySelectorAll('.squad-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            activeSquad = btn.dataset.squad;
+
+            document.querySelectorAll('.squad-filter').forEach(b => {
+                if (b === btn) {
+                    b.style.background  = 'var(--red-faint)';
+                    b.style.borderColor = 'var(--red)';
+                    b.style.color       = 'var(--red)';
+                } else {
+                    b.style.background  = 'transparent';
+                    b.style.borderColor = 'var(--border)';
+                    b.style.color       = 'var(--text-muted)';
+                }
+            });
+
+            applyFilters();
+        });
+    });
+
+    // ── Recherche ────────────────────────────────────────────────────────────
+    searchInput.addEventListener('input', () => {
+        searchQuery = searchInput.value.trim().toLowerCase();
+        applyFilters();
+    });
+})();
+</script>
+
+{% endblock %}

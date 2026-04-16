@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle saison — Back-office{% endblock %}
+
+{% block body %}
+<div style="max-width: 520px; margin: 0 auto;">
+
+    <div style="margin-bottom: 2rem;">
+        <div class="header-tags">
+            <span class="h-tag red">BACK-OFFICE</span>
+            <span class="h-tag">SAISONS</span>
+        </div>
+        <p class="page-title">NOUVELLE SAISON</p>
+    </div>
+
+    <form method="post" style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <div class="card" style="padding: 2rem; display: flex; flex-direction: column; gap: 1.25rem;">
+
+            <div>
+                <label style="display:block; font-family:var(--font-mono); font-size:0.6875rem; letter-spacing:2px; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.375rem;">Nom</label>
+                <input type="text" name="name" placeholder="Saison 2026-2027" required class="input">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label style="display:block; font-family:var(--font-mono); font-size:0.6875rem; letter-spacing:2px; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.375rem;">Date de début</label>
+                    <input type="date" name="startDate" required class="input">
+                </div>
+                <div>
+                    <label style="display:block; font-family:var(--font-mono); font-size:0.6875rem; letter-spacing:2px; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.375rem;">Date de fin</label>
+                    <input type="date" name="endDate" required class="input">
+                </div>
+            </div>
+
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+            <button type="submit" class="btn btn-primary">CRÉER LA SAISON</button>
+            <a href="{{ path('back_seasons_index') }}" class="btn btn-ghost">ANNULER</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

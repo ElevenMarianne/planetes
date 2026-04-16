@@ -1,0 +1,550 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ astronaut.fullName }} — Eleven Galaxy{% endblock %}
+
+{% set planetColor = astronaut.planet ? astronaut.planet.color : '#c62828' %}
+
+{% block body %}
+<style>
+/* ── Variables accent ────────────────────────────────────────────── */
+:root {
+    --ac:  {{ planetColor }};
+    --ac4: {{ planetColor }}44;
+    --ac2: {{ planetColor }}22;
+    --ac9: {{ planetColor }}99;
+}
+
+/* ── Fond grille animé ───────────────────────────────────────────── */
+.astro-bg {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 0; overflow: hidden;
+}
+.astro-bg::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(var(--ac2) 1px, transparent 1px),
+        linear-gradient(90deg, var(--ac2) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.3;
+    animation: bg-drift 50s linear infinite;
+}
+.astro-bg::after {
+    content: '';
+    position: absolute; inset: -50%;
+    background: radial-gradient(ellipse at 40% 20%, var(--ac2) 0%, transparent 50%);
+    animation: bg-pulse 10s ease-in-out infinite;
+}
+@keyframes bg-drift { to { background-position: 48px 48px; } }
+@keyframes bg-pulse { 0%,100%{opacity:.5} 50%{opacity:.9} }
+
+/* ── HUD panel / brackets ─────────────────────────────────────────── */
+.hud-panel { position: relative; }
+.hud-panel .brk {
+    position: absolute;
+    width: 0; height: 0;
+    border-color: var(--ac);
+    border-style: solid;
+    opacity: .35;
+    transition: opacity .3s, width .3s, height .3s;
+    pointer-events: none; z-index: 2;
+}
+.hud-panel:hover .brk { opacity: .75; width: 18px; height: 18px; }
+.hud-panel .brk.tl { top:5px;    left:5px;    border-width:1px 0 0 1px; }
+.hud-panel .brk.tr { top:5px;    right:5px;   border-width:1px 1px 0 0; }
+.hud-panel .brk.bl { bottom:5px; left:5px;    border-width:0 0 1px 1px; }
+.hud-panel .brk.br { bottom:5px; right:5px;   border-width:0 1px 1px 0; }
+
+/* ── Scanline hero ──────────────────────────────────────────────── */
+.hero-scan {
+    position: absolute; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, var(--ac), transparent);
+    top:0; pointer-events:none; z-index:3;
+    animation: hero-scan-move 2.5s linear 0.3s 2;
+    opacity:.7;
+}
+@keyframes hero-scan-move {
+    0%   { top:0%;   opacity:.7; }
+    92%  { opacity:.7; }
+    100% { top:100%; opacity:0; }
+}
+
+/* ── Biometric avatar ────────────────────────────────────────────── */
+.bio-wrap {
+    position: relative;
+    width: 7rem; height: 7rem;
+    flex-shrink: 0;
+}
+.bio-wrap .avatar {
+    width: 100%; height: 100%;
+    font-size: 1.75rem;
+    font-family: var(--font-display);
+    position: relative; z-index: 1;
+}
+.bio-ring {
+    position: absolute; border-radius: 50%;
+    border: 1px solid transparent;
+    pointer-events: none;
+}
+.bio-ring-1 {
+    inset: -12px;
+    border-top-color: var(--ac);
+    border-bottom-color: var(--ac4);
+    animation: bio-spin 3s linear infinite;
+}
+.bio-ring-2 {
+    inset: -6px;
+    border-right-color: var(--ac);
+    animation: bio-spin 2s linear infinite reverse;
+}
+.bio-ring-3 {
+    inset: -20px;
+    border-top-color: var(--ac4);
+    border-left-color: var(--ac4);
+    animation: bio-spin 7s linear infinite;
+}
+@keyframes bio-spin { to { transform: rotate(360deg); } }
+.bio-corner {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-color: var(--ac); border-style: solid; opacity: .6; z-index: 2;
+}
+.bio-corner.tl { top:-3px;    left:-3px;    border-width:2px 0 0 2px; }
+.bio-corner.tr { top:-3px;    right:-3px;   border-width:2px 2px 0 0; }
+.bio-corner.bl { bottom:-3px; left:-3px;    border-width:0 0 2px 2px; }
+.bio-corner.br { bottom:-3px; right:-3px;   border-width:0 2px 2px 0; }
+
+/* ── Glitch nom ──────────────────────────────────────────────────── */
+.name-glitch {
+    animation: name-glitch 7s ease-in-out infinite;
+}
+@keyframes name-glitch {
+    0%,85%,100% { text-shadow:none; transform:none; }
+    87% { text-shadow: 3px 0 var(--red), -3px 0 #00e5ff; transform:translateX(-2px); }
+    89% { text-shadow:-3px 0 var(--red),  3px 0 #00e5ff; transform:translateX(2px); }
+    91% { text-shadow:none; transform:none; }
+}
+
+/* ── Counter animé ───────────────────────────────────────────────── */
+.pts-display {
+    font-family: var(--font-display);
+    font-size: 4.5rem; line-height:1;
+    color: var(--ac);
+    text-shadow: 0 0 40px var(--ac4);
+    animation: pts-in .6s cubic-bezier(.2,0,0,1) .5s both;
+}
+@keyframes pts-in {
+    from { opacity:0; transform:translateY(10px); filter:blur(4px); }
+    to   { opacity:1; transform:none; filter:none; }
+}
+
+/* ── Timeline mission log ────────────────────────────────────────── */
+.mission-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: .875rem 1.125rem;
+    background: var(--panel);
+    position: relative;
+    border-left: 2px solid transparent;
+    transition: border-color .2s, background .15s;
+}
+.mission-entry:hover {
+    background: var(--panel-raised);
+    border-left-color: var(--ac);
+}
+.mission-entry::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: var(--border);
+}
+.mission-entry:last-child::after { display: none; }
+.mission-num {
+    font-family: var(--font-mono);
+    font-size: .55rem; letter-spacing:1px;
+    color: var(--text-subtle); opacity:.5;
+    flex-shrink:0; width:2rem;
+    padding-top: 2px;
+}
+.mission-pts {
+    font-family: var(--font-mono);
+    font-size: .875rem; font-weight:700;
+    color: var(--ac); flex-shrink:0;
+    text-shadow: 0 0 8px var(--ac4);
+}
+
+/* ── Pagination ──────────────────────────────────────────────────── */
+.page-nav {
+    display: flex; align-items:center;
+    justify-content:space-between;
+    padding: .625rem 1.125rem;
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+}
+.page-btn {
+    display: flex; gap: 1px; background: var(--border);
+}
+.page-btn a {
+    padding: .3rem .7rem;
+    font-family: var(--font-mono); font-size: .6875rem; letter-spacing:1px;
+    background: var(--panel); color: var(--text-muted);
+    text-decoration: none; transition: background .15s;
+}
+.page-btn a:hover      { background: var(--panel-raised); color: var(--ac); }
+.page-btn a.current    { background: var(--ac2); color: var(--ac); border: 1px solid var(--ac4); margin: -1px; }
+
+/* ── Trophy card ─────────────────────────────────────────────────── */
+.trophy-card {
+    padding: .875rem 1.125rem;
+    display: flex; align-items:center; gap:.75rem;
+    background: var(--panel);
+    border-left: 2px solid rgba(255,214,0,.3);
+    position: relative; overflow:hidden;
+    flex: 1; min-width: 180px;
+    transition: border-color .2s;
+}
+.trophy-card:hover { border-left-color: var(--gold); }
+.trophy-card::before {
+    content: '';
+    position: absolute; inset:0;
+    background: linear-gradient(90deg, rgba(255,214,0,.04), transparent);
+}
+
+/* ── Section header ──────────────────────────────────────────────── */
+.section-hdr {
+    padding: .625rem 1.125rem;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom: 1px solid var(--border);
+}
+.stripe-ac {
+    height: 2px;
+    background: linear-gradient(90deg, var(--ac), var(--ac4), transparent 70%);
+}
+
+/* ── Anim stagger ────────────────────────────────────────────────── */
+.anim-up { animation: card-init .4s ease-out both; }
+.anim-up.d1 { animation-delay:.08s; }
+.anim-up.d2 { animation-delay:.16s; }
+.anim-up.d3 { animation-delay:.24s; }
+</style>
+
+<div class="astro-bg"></div>
+
+<div style="max-width:860px; margin:0 auto; position:relative; z-index:1;">
+
+{# ── Breadcrumb ─────────────────────────────────────────────────── #}
+<div style="display:flex; align-items:center; gap:.5rem; margin-bottom:1.25rem; flex-wrap:wrap;">
+    <div class="header-tags" style="margin:0;">
+        <span class="h-tag red">DOSSIER PERSONNEL</span>
+        {% if astronaut.planet %}
+            <a href="{{ path('front_planets_show', {slug: astronaut.planet.slug}) }}"
+               style="text-decoration:none;">
+                <span class="h-tag" style="color:var(--ac); border-color:var(--ac4);">
+                    {{ astronaut.planet.name|upper }}
+                </span>
+            </a>
+        {% endif %}
+        {% if grade %}
+            <span class="h-tag" style="color:var(--gold); border-color:rgba(255,214,0,.3);">
+                ⭐ {{ grade.name|upper }}
+            </span>
+        {% endif %}
+    </div>
+    <span style="font-family:var(--font-mono); font-size:.5rem; color:var(--text-subtle);
+                 letter-spacing:1px; opacity:.4; margin-left:auto;">
+        PIL-{{ '%04d'|format(astronaut.id) }} · SYS
+    </span>
+</div>
+
+{# ── Hero — Identity Panel ──────────────────────────────────────── #}
+<div class="hud-panel anim-up"
+     style="border:1px solid var(--ac4); background:var(--panel);
+            margin-bottom:1.5rem; overflow:hidden; position:relative;">
+
+    <div class="brk tl"></div><div class="brk tr"></div>
+    <div class="brk bl"></div><div class="brk br"></div>
+    <div class="hero-scan"></div>
+
+    <div class="stripe-ac"></div>
+
+    {# Header bar #}
+    <div style="padding:.625rem 1.5rem; display:flex; align-items:center;
+                justify-content:space-between; border-bottom:1px solid var(--border);">
+        <div style="display:flex; align-items:center; gap:.75rem;">
+            <span style="font-family:var(--font-mono); font-size:.575rem;
+                         color:var(--text-subtle); letter-spacing:2px;">DOSSIER PILOTE</span>
+            <span style="font-family:var(--font-mono); font-size:.575rem; color:var(--ac);
+                         border:1px solid var(--ac4); padding:1px 6px; letter-spacing:2px;
+                         animation:hud-blink 3s ease-in-out infinite;">ACTIF</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:1rem;">
+            {% if app.user.id == astronaut.id %}
+                <a href="{{ path('front_profile_edit') }}" class="btn btn-ghost btn-sm">MODIFIER</a>
+            {% endif %}
+            <span style="font-family:var(--font-mono); font-size:.575rem;
+                         color:var(--text-subtle); letter-spacing:1px;">PIL-{{ '%04d'|format(astronaut.id) }}</span>
+        </div>
+    </div>
+
+    {# Corps #}
+    <div style="display:flex; align-items:flex-start; gap:2rem; padding:2rem 1.75rem; flex-wrap:wrap;">
+
+        {# Photo biométrique #}
+        <div style="display:flex; flex-direction:column; align-items:center; gap:.625rem; flex-shrink:0;">
+            <div class="bio-wrap">
+                <div class="avatar"
+                     style="width:7rem; height:7rem;
+                            {% if astronaut.planet %}
+                                border-color:{{ planetColor }}66;
+                                box-shadow:0 0 0 3px {{ planetColor }}20, 0 0 30px {{ planetColor }}30;
+                            {% endif %}">
+                    {% if astronaut.photo %}
+                        <img src="/uploads/{{ astronaut.photo }}" alt="{{ astronaut.fullName }}">
+                    {% else %}
+                        {{ astronaut.firstName|first }}{{ astronaut.lastName|first }}
+                    {% endif %}
+                </div>
+                <div class="bio-ring bio-ring-1"></div>
+                <div class="bio-ring bio-ring-2"></div>
+                <div class="bio-ring bio-ring-3"></div>
+                <div class="bio-corner tl"></div>
+                <div class="bio-corner tr"></div>
+                <div class="bio-corner bl"></div>
+                <div class="bio-corner br"></div>
+            </div>
+            <div style="font-family:var(--font-mono); font-size:.42rem; letter-spacing:2px;
+                        color:var(--ac); opacity:.7; text-align:center;">
+                ◈ SCAN VALIDÉ
+            </div>
+        </div>
+
+        {# Infos #}
+        <div style="flex:1; min-width:200px;">
+            <h1 class="name-glitch"
+                style="font-family:var(--font-display); font-size:2.25rem; letter-spacing:5px;
+                       line-height:1; margin-bottom:.25rem;
+                       color:var(--ac); text-shadow:0 0 30px var(--ac4);">
+                {{ astronaut.fullName|upper }}
+            </h1>
+            <p style="font-family:var(--font-mono); font-size:.65rem; color:var(--text-subtle);
+                      letter-spacing:1px; margin-bottom:1rem;">
+                {{ astronaut.email }}
+            </p>
+
+            {# Badges #}
+            <div style="display:flex; flex-wrap:wrap; gap:.375rem; margin-bottom:.875rem;">
+                {% set squadPicto = astronaut.squad.value == 'paris' ? '🗼' : (astronaut.squad.value == 'nantes' ? '🏰' : '🚜') %}
+                <span style="display:inline-flex; align-items:center; gap:.375rem;
+                             padding:.2rem .625rem; font-family:var(--font-mono); font-size:.6rem;
+                             letter-spacing:2px; background:var(--panel-raised);
+                             border:1px solid var(--border); color:var(--text-muted);">
+                    {{ squadPicto }} {{ astronaut.squad.label()|upper }}
+                </span>
+                {% if astronaut.client %}
+                    <span style="display:inline-flex; align-items:center; padding:.2rem .625rem;
+                                 font-family:var(--font-mono); font-size:.6rem; letter-spacing:2px;
+                                 background:var(--panel-raised); border:1px solid var(--border);
+                                 color:var(--text-muted);">
+                        {{ astronaut.client|upper }}
+                    </span>
+                {% endif %}
+            </div>
+
+            {% if astronaut.hobbies %}
+                <p style="color:var(--text-muted); font-size:.875rem; line-height:1.65;
+                          font-family:var(--font-body); border-left:2px solid var(--ac4);
+                          padding-left:.75rem; margin-bottom:.875rem;">
+                    {{ astronaut.hobbies }}
+                </p>
+            {% endif %}
+
+            {# Meta #}
+            <div style="display:flex; flex-wrap:wrap; gap:1.25rem; margin-top:.25rem;">
+                {% if astronaut.arrivedAt %}
+                    <div>
+                        <div style="font-family:var(--font-mono); font-size:.5rem;
+                                    color:var(--text-subtle); letter-spacing:2px; margin-bottom:2px;">
+                            ARRIVÉE
+                        </div>
+                        <div style="font-family:var(--font-mono); font-size:.75rem; color:var(--text);">
+                            {{ astronaut.arrivedAt|date('d/m/Y') }}
+                        </div>
+                    </div>
+                {% endif %}
+                <div>
+                    <div style="font-family:var(--font-mono); font-size:.5rem;
+                                color:var(--text-subtle); letter-spacing:2px; margin-bottom:2px;">
+                        MISSIONS
+                    </div>
+                    <div style="font-family:var(--font-mono); font-size:.75rem; color:var(--text);">
+                        {{ totalCount }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Points #}
+        <div style="flex-shrink:0; border-left:1px solid var(--border); padding-left:1.75rem;
+                    display:flex; flex-direction:column; align-items:flex-end; justify-content:center;
+                    min-width:120px;">
+            <div class="pts-display" id="pts-counter" data-target="{{ astronaut.totalPoints }}">0</div>
+            <div style="font-family:var(--font-mono); font-size:.575rem; letter-spacing:3px;
+                        color:var(--text-subtle); margin-top:4px;">POINTS TOTAUX</div>
+            {# Jauge verticale #}
+            <div style="margin-top:.875rem; display:flex; justify-content:flex-end; gap:2px;">
+                {% for i in 1..8 %}
+                    <div style="width:4px; height:{{ 6 + i * 3 }}px;
+                                background:{% if i <= (astronaut.totalPoints / 100)|round %}var(--ac){% else %}var(--border){% endif %};
+                                opacity:{% if i <= (astronaut.totalPoints / 100)|round %}.8{% else %}.2{% endif %};
+                                {% if i == (astronaut.totalPoints / 100)|round %}box-shadow:0 0 4px var(--ac);{% endif %}
+                                border-radius:1px;"></div>
+                {% endfor %}
+            </div>
+            {% if grade %}
+                <div style="margin-top:.875rem; font-family:var(--font-mono); font-size:.6rem;
+                            color:var(--gold); border:1px solid rgba(255,214,0,.3);
+                            padding:.2rem .625rem; letter-spacing:2px; text-align:center;">
+                    ⭐ {{ grade.name|upper }}
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+{# ── Trophées ───────────────────────────────────────────────────── #}
+{% if astronaut.trophies|length > 0 %}
+<div class="hud-panel anim-up d1"
+     style="border:1px solid rgba(255,214,0,.2); background:var(--panel);
+            margin-bottom:1.5rem; overflow:hidden;">
+    <div class="brk tl"></div><div class="brk tr"></div>
+    <div class="brk bl"></div><div class="brk br"></div>
+    <div style="height:2px; background:linear-gradient(90deg, var(--gold), rgba(255,214,0,.2), transparent 70%);"></div>
+    <div class="section-hdr">
+        <span style="font-family:var(--font-mono); font-size:.6875rem;
+                     letter-spacing:3px; color:var(--text-muted);">DÉCORATIONS</span>
+        <span style="font-family:var(--font-mono); font-size:.6rem; color:var(--gold);
+                     border:1px solid rgba(255,214,0,.3); padding:1px 5px; letter-spacing:1px;">
+            {{ astronaut.trophies|length }}
+        </span>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:1px; background:var(--border);">
+        {% for at in astronaut.trophies %}
+            <div class="trophy-card">
+                {% if at.trophy.image %}
+                    <img src="/uploads/{{ at.trophy.image }}" alt="{{ at.trophy.name }}"
+                         style="width:2.25rem; height:2.25rem; object-fit:contain; flex-shrink:0; position:relative; z-index:1;">
+                {% else %}
+                    <span style="font-size:1.75rem; line-height:1; flex-shrink:0; position:relative; z-index:1;">🏆</span>
+                {% endif %}
+                <div style="position:relative; z-index:1;">
+                    <div style="font-family:var(--font-display); font-size:.875rem;
+                                letter-spacing:2px; color:var(--gold);">{{ at.trophy.name|upper }}</div>
+                    {% if at.trophy.description %}
+                        <div style="font-family:var(--font-mono); font-size:.6rem;
+                                    color:var(--text-subtle); letter-spacing:1px; margin-top:2px;">
+                            {{ at.trophy.description }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Journal de missions ─────────────────────────────────────────── #}
+<div class="hud-panel anim-up d2"
+     style="border:1px solid var(--border); background:var(--panel); overflow:hidden;">
+    <div class="brk tl"></div><div class="brk tr"></div>
+    <div class="brk bl"></div><div class="brk br"></div>
+    <div class="stripe-ac"></div>
+    <div class="section-hdr">
+        <span style="font-family:var(--font-mono); font-size:.6875rem;
+                     letter-spacing:3px; color:var(--text-muted);">JOURNAL DE MISSIONS</span>
+        <span style="font-family:var(--font-mono); font-size:.6rem; color:var(--ac);
+                     border:1px solid var(--ac4); padding:1px 5px; letter-spacing:1px;">
+            {{ totalCount }} LOG{{ totalCount > 1 ? 'S' : '' }}
+        </span>
+    </div>
+
+    {% if activities %}
+        <div style="display:flex; flex-direction:column; gap:1px; background:var(--border);">
+            {% for i, activity in activities %}
+                <div class="mission-entry" style="animation:card-init .3s ease-out {{ 0.04 * i }}s both;">
+                    <span class="mission-num">{{ '%02d'|format((currentPage - 1) * 10 + i + 1) }}</span>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-family:var(--font-body); font-weight:600;
+                                    font-size:.9rem; color:var(--text);">
+                            {{ activity.type.name }}
+                        </div>
+                        <div style="font-family:var(--font-mono); font-size:.625rem;
+                                    letter-spacing:1px; color:var(--text-subtle); margin-top:2px;">
+                            {{ activity.createdAt|date('d/m/Y') }}
+                            {% if activity.season %}
+                                <span style="opacity:.5; margin:0 .25rem;">·</span>
+                                {{ activity.season.name|upper }}
+                            {% endif %}
+                            {% if activity.note %}
+                                <span style="opacity:.5; margin:0 .25rem;">·</span>
+                                {{ activity.note }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mission-pts">+{{ activity.points }}pt</div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {# Pagination #}
+        {% if totalPages > 1 %}
+        <div class="page-nav">
+            <span style="font-family:var(--font-mono); font-size:.6rem;
+                         color:var(--text-subtle); letter-spacing:1px;">
+                PAGE {{ currentPage }}/{{ totalPages }}
+            </span>
+            <div class="page-btn">
+                {% if currentPage > 1 %}
+                    <a href="{{ path('front_astronauts_show', {id: astronaut.id, page: currentPage - 1}) }}">← PRÉC</a>
+                {% endif %}
+                {% for p in 1..totalPages %}
+                    <a href="{{ path('front_astronauts_show', {id: astronaut.id, page: p}) }}"
+                       class="{{ p == currentPage ? 'current' : '' }}">{{ p }}</a>
+                {% endfor %}
+                {% if currentPage < totalPages %}
+                    <a href="{{ path('front_astronauts_show', {id: astronaut.id, page: currentPage + 1}) }}">SUIV →</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div style="padding:3rem; text-align:center;">
+            <p style="font-family:var(--font-mono); font-size:.7rem;
+                      color:var(--text-subtle); letter-spacing:3px;">AUCUNE MISSION ENREGISTRÉE</p>
+        </div>
+    {% endif %}
+</div>
+
+</div>{# fin max-width #}
+
+<script>
+(function () {
+    const el = document.getElementById('pts-counter');
+    if (!el) return;
+    const target   = parseInt(el.dataset.target, 10) || 0;
+    const duration = 900;
+    const start    = performance.now();
+    function tick(now) {
+        const t    = Math.min((now - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        el.textContent = Math.round(ease * target);
+        if (t < 1) requestAnimationFrame(tick);
+    }
+    setTimeout(() => requestAnimationFrame(tick), 500);
+})();
+</script>
+
+{% endblock %}
